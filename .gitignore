@@ -1,0 +1,25 @@
+# ===== SPRING BOOT =====
+**/target/
+**/.mvn/
+**/*.class
+**/*.jar
+**/.idea/
+**/*.iml
+**/HELP.md
+
+# ===== REACT =====
+**/node_modules/
+**/build/
+**/.env
+**/.env.local
+**/npm-debug.log*
+
+# ===== FLUTTER =====
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/pubspec.lock
+
+# ===== OS =====
+.DS_Store
+Thumbs.db

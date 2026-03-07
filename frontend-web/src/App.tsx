@@ -1,24 +1,19 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
+import Button from './components/Button';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    // Fond gris clair comme sur la photo
+    <div >
+      
+      <Button 
+  label="Contact Us" 
+  variant="primary" 
+  size="full"
+  className="bg-[#1D2125] text-white hover:bg-black rounded-lg" 
+/>
     </div>
   );
 }

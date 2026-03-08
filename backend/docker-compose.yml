@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+
+  # ─── Auth Database ───────────────────────────────────────
+  auth-db:
+    image: postgres:18
+    container_name: fittech-auth-db
+    restart: always
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql
+      - ./docker/init/01-auth-init.sql:/docker-entrypoint-initdb.d/01-auth-init.sql
+    networks:
+      - fittech-network
+
+  # ─── User Database ────────────────────────────────────────
+  user-db:
+    image: postgres:18
+    container_name: fittech-user-db
+    restart: always
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - user-db-data:/var/lib/postgresql
+      - ./docker/init/02-user-init.sql:/docker-entrypoint-initdb.d/02-user-init.sql
+    networks:
+      - fittech-network
+
+volumes:
+  auth-db-data:
+  user-db-data:
+
+networks:
+  fittech-network:
+    driver: bridge

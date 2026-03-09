@@ -18,7 +18,7 @@ public class Member {
     @Column(nullable = false)
     private String authId;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String fullName;
 
     private String phone;

@@ -59,4 +59,16 @@ public class CoachController {
             @RequestBody UpdateCoachRequest request) {
         return ResponseEntity.ok(coachService.updateCoach(id, request));
     }
+
+    @PostMapping("/internal")
+    public ResponseEntity<Coach> createCoachInternal(
+            @RequestBody InternalCoachRequest request) {
+        CreateCoachRequest coachRequest = new CreateCoachRequest();
+        coachRequest.setAuthId(request.getAuthId());
+        coachRequest.setFullName(request.getFullName());
+        coachRequest.setPhone(request.getPhone());
+        coachRequest.setSpecialties(request.getSpecialties());
+        coachRequest.setBiography(request.getBiography());
+        return ResponseEntity.ok(coachService.createCoach(coachRequest));
+    }
 }

@@ -1,18 +1,14 @@
 package com.gym.authservice.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class CreateCoachRequest {
-
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email is invalid")
     private String email;
-
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
+    // ──► profile fields sent to user-service
+    private String fullName;
+    private String phone;
+    private String specialties;
+    private String biography;
 }

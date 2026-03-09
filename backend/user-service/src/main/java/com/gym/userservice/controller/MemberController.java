@@ -94,4 +94,15 @@ public class MemberController {
             @PathVariable String nfcCardId) {
         return ResponseEntity.ok(memberService.checkNfcAccess(nfcCardId));
     }
+
+    // ─── Internal (called by auth-service only) ──────────────────────
+    @PostMapping("/internal")
+    public ResponseEntity<Member> createMemberInternal(
+            @RequestBody InternalMemberRequest request) {
+        CreateMemberRequest memberRequest = new CreateMemberRequest();
+        memberRequest.setAuthId(request.getAuthId());
+        memberRequest.setFullName(request.getFullName());
+        memberRequest.setGender(request.getGender());
+        return ResponseEntity.ok(memberService.createMember(memberRequest));
+    }
 }

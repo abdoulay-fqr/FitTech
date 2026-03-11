@@ -29,6 +29,7 @@ public class SecurityConfig {
                                 "/auth/coach",
                                 "/auth/forgot-password",
                                 "/auth/reset-password"
+
                         ).permitAll()
                         .anyRequest().authenticated()
                 );

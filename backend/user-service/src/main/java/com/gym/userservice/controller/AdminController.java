@@ -37,6 +37,14 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getAdminById(id));
     }
 
+    @PostMapping("/internal")
+    public ResponseEntity<Admin> createAdminInternal(@RequestBody InternalAdminRequest request) {
+        CreateAdminRequest adminRequest = new CreateAdminRequest();
+        adminRequest.setAuthId(request.getAuthId());
+        adminRequest.setFullName(request.getFullName());
+        adminRequest.setPhone(request.getPhone());
+        return ResponseEntity.ok(adminService.createAdmin(adminRequest));
+    }
     @GetMapping("/auth/{authId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Admin> getAdminByAuthId(@PathVariable String authId) {

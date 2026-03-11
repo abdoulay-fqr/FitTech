@@ -11,4 +11,7 @@ public interface UserServiceClient {
 
     @PostMapping("/users/coaches/internal")
     void createCoachProfile(@RequestBody InternalCoachRequest request);
+
+    @PostMapping("/users/admins/internal")
+    void createAdminProfile(@RequestBody InternalAdminRequest request);
 }

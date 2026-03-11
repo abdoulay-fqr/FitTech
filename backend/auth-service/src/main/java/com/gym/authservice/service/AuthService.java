@@ -1,6 +1,7 @@
 package com.gym.authservice.service;
 
 
+import com.gym.authservice.config.InternalAdminRequest;
 import com.gym.authservice.config.InternalCoachRequest;
 import com.gym.authservice.config.InternalMemberRequest;
 import com.gym.authservice.config.UserServiceClient;
@@ -189,5 +190,35 @@ public class AuthService {
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
         repository.save(user);
+    }
+    //create admin
+    public AuthResponse createAdmin(CreateAdminRequest request) {
+        if (repository.existsByEmail(request.getEmail())) {  // ──► repository pas userCredentialRepository
+            throw new RuntimeException("Email already exists");
+        }
+
+        UserCredential user = UserCredential.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(Role.ADMIN)
+                .suspended(false)
+                .build();
+        repository.save(user);  // ──► repository
+
+        try {
+            userServiceClient.createAdminProfile(
+                    new InternalAdminRequest(user.getId(), request.getFullName(), request.getPhone())
+            );
+        } catch (Exception e) {
+            log.warn("Could not create admin profile: {}", e.getMessage());
+        }
+
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
+        return AuthResponse.builder()
+                .token(token)
+                .id(user.getId())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
     }
 }

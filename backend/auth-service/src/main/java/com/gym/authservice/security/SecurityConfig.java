@@ -27,8 +27,10 @@ public class SecurityConfig {
                                 "/auth/register",
                                 "/auth/login",
                                 "/auth/coach",
+                                "/auth/admin",      // ──► ADD THIS
                                 "/auth/forgot-password",
-                                "/auth/reset-password"
+                                "/auth/reset-password",
+                                "/auth/validate"
 
                         ).permitAll()
                         .anyRequest().authenticated()

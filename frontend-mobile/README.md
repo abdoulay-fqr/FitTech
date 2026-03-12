@@ -1,4 +1,4 @@
-# fittech_mobile
+# project_2cs
 
 A new Flutter project.
 

@@ -1,121 +1,216 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:app_links/app_links.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'onboarding_screen.dart';
+import 'carousel_screen.dart';
+import 'signin_screen.dart';
+import 'signup_screen.dart';
+import 'forgot_password_screen.dart';
+import 'forgot_password_sent_screen.dart';
+import 'reset_password_screen.dart';
+import 'password_reset_success_screen.dart';
+import 'free_trial_screen.dart';
+import 'trial_success_screen.dart';
+import 'home_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final prefs = await SharedPreferences.getInstance();
+
+  // 👇 UNCOMMENT this line to show onboarding (e.g. when showing teacher)
+  await prefs.clear();
+
+  final bool seenOnboarding = prefs.getBool('seen_onboarding') ?? false;
+
+  runApp(MyApp(seenOnboarding: seenOnboarding));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  final bool seenOnboarding;
+  const MyApp({super.key, required this.seenOnboarding});
 
-  // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router;
+  late AppLinks _appLinks;
+  StreamSubscription? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = _createRouter();
+    _initDeepLinks();
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🔗 DEEP LINK HANDLER
+  // ══════════════════════════════════════════════════════════════════
+  void _initDeepLinks() async {
+    _appLinks = AppLinks();
+
+    // Handle initial link (app was closed and opened via link)
+    try {
+      final initialLink = await _appLinks.getInitialLink();
+      if (initialLink != null) {
+        _handleDeepLink(initialLink);
+      }
+    } catch (e) {
+      debugPrint('❌ Error getting initial link: $e');
+    }
+
+    // Handle links while app is running
+    _linkSubscription = _appLinks.uriLinkStream.listen(
+          (Uri? uri) {
+        if (uri != null) {
+          _handleDeepLink(uri);
+        }
+      },
+      onError: (err) {
+        debugPrint('❌ Error listening to link stream: $err');
+      },
     );
   }
-}
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  // ══════════════════════════════════════════════════════════════════
+  // 🎯 PARSE AND NAVIGATE
+  // ══════════════════════════════════════════════════════════════════
+  void _handleDeepLink(Uri uri) {
+    final link = uri.toString();
+    debugPrint('🔗 Deep link received (original): $link');
+    debugPrint('🔍 Scheme: ${uri.scheme}');
+    debugPrint('🔍 Host: ${uri.host}');
+    debugPrint('🔍 Path: ${uri.path}');
+    debugPrint('🔍 Query: ${uri.query}');
+    debugPrint('🔍 Query Parameters: ${uri.queryParameters}');
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
+    // fittech://reset-password?token=xxx
+    if (uri.scheme == 'fittech') {
+      // Get token from query parameters
+      String? token = uri.queryParameters['token'];
 
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+      debugPrint('🔍 Token from queryParameters: $token');
 
-  final String title;
+      // If token is null, try parsing the query string manually
+      if (token == null && uri.query.isNotEmpty) {
+        final queryParts = uri.query.split('=');
+        if (queryParts.length == 2 && queryParts[0] == 'token') {
+          token = queryParts[1];
+          debugPrint('🔍 Token from manual parse: $token');
+        }
+      }
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+      // Check if it's a reset-password link
+      if (uri.host == 'reset-password' || uri.path.contains('reset-password')) {
+        if (token != null && token.isNotEmpty) {
+          debugPrint('✅ Navigating to reset password with token: $token');
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+          // Navigate after a small delay to ensure router is ready
+          Future.delayed(const Duration(milliseconds: 200), () {
+            _router.go('/reset-password?token=$token');
+          });
+        } else {
+          debugPrint('⚠️ No token found in reset password link');
+        }
+      } else {
+        debugPrint('⚠️ Not a reset-password link. Host: ${uri.host}, Path: ${uri.path}');
+      }
+    } else {
+      debugPrint('⚠️ Not a fittech:// scheme. Got: ${uri.scheme}');
+    }
+  }
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  // ══════════════════════════════════════════════════════════════════
+  // 🛣️ ROUTER CONFIGURATION
+  // ══════════════════════════════════════════════════════════════════
+  GoRouter _createRouter() {
+    return GoRouter(
+      initialLocation: widget.seenOnboarding ? '/signin' : '/onboarding',
+      routes: [
+        // ── Home ──────────────────────────────────────────────────────
+        GoRoute(
+          path: '/home',
+          builder: (context, state) => const HomeScreen(),
+        ),
+
+        // ── Onboarding & Carousel ──────────────────────────────────────
+        GoRoute(
+          path: '/onboarding',
+          builder: (context, state) => const OnboardingScreen(),
+        ),
+        GoRoute(
+          path: '/carousel',
+          builder: (context, state) => const CarouselScreen(),
+        ),
+
+        // ── Auth ───────────────────────────────────────────────────────
+        GoRoute(
+          path: '/signin',
+          builder: (context, state) => const SignInScreen(),
+        ),
+        GoRoute(
+          path: '/signup',
+          builder: (context, state) => const SignUpScreen(),
+        ),
+
+        // ── Forgot Password flow ───────────────────────────────────────
+        GoRoute(
+          path: '/forgot-password',
+          builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/forgot-password/sent',
+          builder: (context, state) {
+            final email = state.extra as String? ?? '';
+            return ForgotPasswordSentScreen(email: email);
+          },
+        ),
+        GoRoute(
+          path: '/reset-password', // ← deep link ready 🔗
+          builder: (context, state) {
+            final token = state.uri.queryParameters['token'] ?? '';
+            return ResetPasswordScreen(token: token);
+          },
+        ),
+        GoRoute(
+          path: '/reset-password/success',
+          builder: (context, state) => const PasswordResetSuccessScreen(),
+        ),
+
+        // ── Free Trial flow ────────────────────────────────────────────
+        GoRoute(
+          path: '/free-trial',
+          builder: (context, state) => const FreeTrialScreen(),
+        ),
+        GoRoute(
+          path: '/free-trial/success',
+          builder: (context, state) => const TrialSuccessScreen(),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+    return MaterialApp.router(
+      title: 'Fit-Tech',
+      debugShowCheckedModeBanner: false,
+      routerConfig: _router,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFFCC00)),
+        useMaterial3: true,
       ),
     );
   }

@@ -49,9 +49,8 @@ const cardVariants: Variants = {
 
 const CoachsSection = () => {
   return (
-    <section className="px-6 md:px-10 lg:px-20 py-24">
+    <section id="coachs" className="px-6 md:px-10 lg:px-20 py-24">
 
-      {/* Title animé au scroll */}
       <motion.div
         className="text-center"
         initial={{ opacity: 0, y: -40 }}
@@ -74,7 +73,6 @@ const CoachsSection = () => {
         </motion.p>
       </motion.div>
 
-      {/* Ligne décorative animée */}
       <motion.div
         className="mx-auto mt-6 h-[3px] bg-[#F7D211] rounded-full"
         initial={{ width: 0 }}
@@ -83,7 +81,6 @@ const CoachsSection = () => {
         transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
       />
 
-      {/* Cards avec stagger au scroll */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mt-16">
         {coaches.map((coach, index) => (
           <motion.div

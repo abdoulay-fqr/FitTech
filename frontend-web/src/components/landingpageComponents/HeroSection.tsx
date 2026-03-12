@@ -6,7 +6,7 @@ const HeroSection = () => {
   return (
     <section
       id="home"
-      className="relative overflow-hidden px-4 sm:px-6 md:px-10 lg:px-20 pt-8 sm:pt-10 md:pt-14 lg:pt-16 pb-10"
+      className=" relative overflow-hidden px-4 sm:px-6 md:px-10 lg:px-20 pt-8 sm:pt-10 md:pt-14 lg:pt-16 pb-10"
     >
      
       <div className="relative z-10 max-w-[1400px] mx-auto">
@@ -15,9 +15,8 @@ const HeroSection = () => {
             <div className="relative flex justify-center">
               <div className="relative inline-block">
                 
-                {/* Shape Your Body, Boost Your - animation */}
                 <motion.p 
-                  className="text-[#24292D] font-semibold text-base sm:text-lg md:text-2-xl leading-tight text-left"
+                  className="text-[#24292D] font-bold md:font-semibold text-base text-[10px]    sm:text-[12px] md:text-[14px] leading-tight text-left"
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6 }}
@@ -25,7 +24,6 @@ const HeroSection = () => {
                   Shape Your Body, Boost Your
                 </motion.p>
 
-                {/* Titre avec image - animation */}
                 <motion.h1 
                   className="text-[#1D2125] font-black uppercase leading-[0.88] text-[52px] sm:text-[78px] md:text-[110px] lg:text-[170px] xl:text-[180px] whitespace-nowrap"
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -36,7 +34,6 @@ const HeroSection = () => {
                     FITN&nbsp;
                   </span>
 
-                  {/* Image avec animation - position exactement comme avant */}
                   <img
                     src={heroImg}
                     alt="fitness"
@@ -57,40 +54,30 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Description et stats avec animation */}
             <motion.div 
-              className="mt-6 sm:mt-8 flex flex-col md:flex-row lg:justify-between lg:items-start gap-6 w-full"
+                className="mt-10 sm:mt-16 md:mt-0   flex flex-col  md:flex-row pt-[20px] text-[12px]  sm:text-[12px] md:text-[14px]  justify-between items-center lg:items-start gap-6 w-full"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.6 }}
             >
-              {/* Description */}
-              <div className="max-w-[520px]">
-                <p className="text-[#3E4348] text-sm sm:text-base md:text-lg leading-7 sm:leading-8 text-left">
-                  Struggling With Strength, Endurance, Weight Loss,
-                  <br className="hidden sm:block" />
-                  Or Muscle-Building Goals? Our Expert Coaching
-                  <br className="hidden sm:block" />
-                  Provides Personalized Plans For Real, Lasting
-                  <br className="hidden sm:block" />
-                  Progress.
+              <div className="max-w-[300px]  lg:max-w-[500px]">
+                <p className="text-[#3E4348] sm:text-center md:text-left  ">
+                 Struggling with strength, endurance, weight loss, <br /> or muscle-building goals? Our expert coaching <br /> provides personalized plans for real, lasting progress.
                 </p>
               </div>
 
-              {/* Stats avec avatars */}
               <motion.div 
-                className="shrink-0 text-center lg:text-right"
+                className="shrink-0 text-center  lg:text-right"
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.7, delay: 0.7 }}
               >
-                <p className="text-[#1D2125] font-semibold text-base sm:text-lg md:text-2xl leading-tight">
+                <p className="text-[#1D2125] font-semibold text-base text-[12px]  sm:text-[12px] md:text-[14px] leading-tight">
                   5,000+ Successful
                   <br />
                   Makeovers
                 </p>
 
-                {/* Avatars avec animation individuelle */}
                 <div className="mt-3 flex justify-center lg:justify-end">
                   <motion.img
                     src={avatar1}

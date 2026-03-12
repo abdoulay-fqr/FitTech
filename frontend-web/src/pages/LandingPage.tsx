@@ -13,7 +13,6 @@ const LandingPage = () => {
     <div>
 
         <Navbar/>
-      {/* yellow glow */}
       <div className="pointer-events-none absolute inset-0 flex justify-center">
         <div className="h-full w-[180px] sm:w-[230px] md:w-[300px] lg:w-[430px] bg-[#F7D211]/20 blur-3xl rounded-full" />
       </div>

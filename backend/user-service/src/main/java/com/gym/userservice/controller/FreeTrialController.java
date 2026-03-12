@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users/trials")
@@ -19,11 +20,6 @@ public class FreeTrialController {
     private final FreeTrialService freeTrialService;
 
     // ─── Public ──────────────────────────────────────────────────────
-    @PostMapping
-    public ResponseEntity<FreeTrial> createFreeTrial(
-            @Valid @RequestBody CreateFreeTrialRequest request) {
-        return ResponseEntity.ok(freeTrialService.createFreeTrial(request));
-    }
 
     // ─── Admin only ──────────────────────────────────────────────────
     @GetMapping
@@ -38,6 +34,23 @@ public class FreeTrialController {
         return ResponseEntity.ok(freeTrialService.markAsUsed(id));
     }
 
+    @PostMapping
+    public ResponseEntity<?> createFreeTrial(
+            @Valid @RequestBody CreateFreeTrialRequest request) {
+        try {
+            FreeTrial trial = freeTrialService.createFreeTrial(request);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Congratulations! Your free trial has been registered.",
+                    "data", trial
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deleteTrial(@PathVariable String id) {

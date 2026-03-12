@@ -30,6 +30,7 @@ public class SecurityConfig {
                                 "/auth/admin",      // ──► ADD THIS
                                 "/auth/forgot-password",
                                 "/auth/reset-password",
+                                "/auth/exists",
                                 "/auth/validate"
 
                         ).permitAll()

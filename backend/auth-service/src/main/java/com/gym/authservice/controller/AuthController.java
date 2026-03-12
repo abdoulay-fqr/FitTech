@@ -70,6 +70,11 @@ public class AuthController {
     public ResponseEntity<AuthResponse> createAdmin(@RequestBody CreateAdminRequest request) {
         return ResponseEntity.ok(authService.createAdmin(request));
     }
+    // email exixt dans auth db or no for freetrial
+    @GetMapping("/exists")
+    public ResponseEntity<Boolean> emailExists(@RequestParam String email) {
+        return ResponseEntity.ok(authService.emailExists(email));
+    }
     // ─── Reset password ──────────────────────────────────────────────
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(

@@ -221,4 +221,7 @@ public class AuthService {
                 .role(user.getRole().name())
                 .build();
     }
+    public boolean emailExists(String email) {
+        return repository.existsByEmail(email);
+    }
 }

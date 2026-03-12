@@ -1,5 +1,6 @@
 package com.gym.userservice.service;
 
+import com.gym.userservice.config.AuthServiceClient;
 import com.gym.userservice.dto.CreateFreeTrialRequest;
 import com.gym.userservice.model.FreeTrial;
 import com.gym.userservice.repository.FreeTrialRepository;
@@ -13,36 +14,44 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FreeTrialService {
 
-    private final FreeTrialRepository repository;
+    private final FreeTrialRepository freeTrialRepository;
+    private final AuthServiceClient authServiceClient;
 
-    // ─── Create free trial ───────────────────────────────────────────
     public FreeTrial createFreeTrial(CreateFreeTrialRequest request) {
+
+        // ──► Check if email already has an account
+        boolean exists = authServiceClient.emailExists(request.getEmail());
+        if (exists) {
+            throw new RuntimeException("You already have an account!");
+        }
+
+        // ──► Check if free trial already requested
+        if (freeTrialRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("You already requested a free trial!");
+        }
+
         FreeTrial trial = FreeTrial.builder()
                 .fullName(request.getFullName())
-                .address(request.getAddress())
+                .email(request.getEmail())
                 .createdAt(LocalDateTime.now())
                 .used(false)
                 .build();
-        return repository.save(trial);
+
+        return freeTrialRepository.save(trial);
     }
 
-    // ─── Get all trials ──────────────────────────────────────────────
     public List<FreeTrial> getAllTrials() {
-        return repository.findAll();
+        return freeTrialRepository.findAll();
     }
 
-    // ─── Mark trial as used ──────────────────────────────────────────
     public FreeTrial markAsUsed(String id) {
-        FreeTrial trial = repository.findById(id)
+        FreeTrial trial = freeTrialRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trial not found"));
         trial.setUsed(true);
-        return repository.save(trial);
+        return freeTrialRepository.save(trial);
     }
 
-    // ─── Delete trial ────────────────────────────────────────────────
     public void deleteTrial(String id) {
-        repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Trial not found"));
-        repository.deleteById(id);
+        freeTrialRepository.deleteById(id);
     }
 }

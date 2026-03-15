@@ -44,4 +44,5 @@ jwt:
   expiration: 86400000
 
 app:
-  reset-password-url: fittech://reset-password
+  reset-password-url: http://localhost:3000/reset-password
+  reset-password-url-mobile: fittech://reset-password

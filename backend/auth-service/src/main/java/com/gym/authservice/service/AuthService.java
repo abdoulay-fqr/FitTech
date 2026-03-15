@@ -174,7 +174,7 @@ public class AuthService {
         user.setResetTokenExpiry(java.time.LocalDateTime.now().plusMinutes(15));
         repository.save(user);
 
-        emailService.sendResetPasswordEmail(user.getEmail(), token);
+        emailService.sendResetPasswordEmail(user.getEmail(), token, request.getPlatform()); // 👈 add platform
     }
 
     // ─── Reset password ──────────────────────────────────────────────

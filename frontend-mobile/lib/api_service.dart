@@ -2,8 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.100.6:8080';
-
+  static const String baseUrl = 'http://10.0.2.2:8080';
   final Dio _dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,
@@ -65,12 +64,16 @@ class ApiService {
 
   // ══════════════════════════════════════════════════════════════════
   // 🔑 FORGOT PASSWORD
-  // ══════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════Future<ApiResult> forgotPassword({required String email}) async {
+
   Future<ApiResult> forgotPassword({required String email}) async {
     try {
       final response = await _dio.post(
         '/auth/forgot-password',
-        data: {'email': email},
+        data: {
+          'email': email,
+          'platform': 'mobile',  // 👈 inside data map
+        },
       );
       return ApiResult.success(response.data);
     } on DioException catch (e) {

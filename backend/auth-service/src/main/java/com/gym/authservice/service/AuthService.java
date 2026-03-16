@@ -86,6 +86,15 @@ public class AuthService {
             throw new RuntimeException("Account is suspended");
         }
 
+        // ──► Platform check
+        String platform = request.getPlatform();
+        if ("WEB".equalsIgnoreCase(platform) && user.getRole() == Role.MEMBRE) {
+            throw new RuntimeException("Members can only access the mobile app");
+        }
+        if ("MOBILE".equalsIgnoreCase(platform) && user.getRole() == Role.ADMIN) {
+            throw new RuntimeException("Admins can only access the web panel");
+        }
+
         String token = jwtUtil.generateToken(
                 user.getId(),
                 user.getEmail(),
@@ -99,7 +108,6 @@ public class AuthService {
                 .role(user.getRole().name())
                 .build();
     }
-
     // ─── Admin creates coach ─────────────────────────────────────────
     public AuthResponse createCoach(CreateCoachRequest request) {
         if (repository.existsByEmail(request.getEmail())) {

@@ -26,7 +26,7 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/users/members/nfc/check/**","/users/trials","/users/members/internal","/users/coaches/internal").permitAll()
+                        .requestMatchers("/users/members/nfc/check/**","/users/trials","/users/members/internal","/users/coaches/internal", "/users/admins/internal").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter,

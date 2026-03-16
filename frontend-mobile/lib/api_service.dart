@@ -53,6 +53,7 @@ class ApiService {
         data: {
           'email': email,
           'password': password,
+          'platform': 'MOBILE',
         },
       );
       await _saveToken(response.data);

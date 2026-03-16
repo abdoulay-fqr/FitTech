@@ -33,11 +33,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _onRegister() async {
     setState(() => _errorMessage = null);
 
+    // ── Validation ──────────────────────────────────────────────────
     if (_firstNameController.text.trim().isEmpty ||
         _secondNameController.text.trim().isEmpty ||
         _emailController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty) {
       setState(() => _errorMessage = 'Please fill in all fields');
+      return;
+    }
+
+    // Email format
+    final emailRegex = RegExp(r'^[\w.-]+@[\w.-]+\.\w{2,}$');
+    if (!emailRegex.hasMatch(_emailController.text.trim())) {
+      setState(() => _errorMessage = 'Please enter a valid email address');
+      return;
+    }
+
+    // Password length
+    if (_passwordController.text.trim().length < 6) {
+      setState(() => _errorMessage = 'Password must be at least 6 characters');
+      return;
+    }
+
+    // Name — letters only
+    final nameRegex = RegExp(r'^[a-zA-ZÀ-ÿ\s]+$');
+    if (!nameRegex.hasMatch(_firstNameController.text.trim())) {
+      setState(() => _errorMessage = 'First name must contain letters only');
+      return;
+    }
+    if (!nameRegex.hasMatch(_secondNameController.text.trim())) {
+      setState(() => _errorMessage = 'Second name must contain letters only');
       return;
     }
 
@@ -47,6 +72,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     setState(() => _isLoading = true);
+
 
     final result = await ApiService().register(
       email: _emailController.text.trim(),
@@ -80,6 +106,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           // ── Light yellow blob top-left ─────────────────────────────
@@ -123,6 +150,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           // ── Main scrollable content ────────────────────────────────
           SafeArea(
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.symmetric(horizontal: 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

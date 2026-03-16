@@ -23,20 +23,42 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
+  // ── XSS Sanitizer ────────────────────────────────────────────────
+  String _sanitize(String input) {
+    return input
+        .replaceAll('<', '')
+        .replaceAll('>', '')
+        .replaceAll('"', '')
+        .replaceAll("'", '')
+        .replaceAll('&', '')
+        .replaceAll('/', '')
+        .replaceAll('\\', '')
+        .replaceAll(';', '')
+        .trim();
+  }
+
   Future<void> _onSignIn() async {
     setState(() => _errorMessage = null);
 
+    // ── Validation ───────────────────────────────────────────────
     if (_emailController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty) {
       setState(() => _errorMessage = 'Please fill in all fields');
       return;
     }
 
+    // Email format
+    final emailRegex = RegExp(r'^[\w.-]+@[\w.-]+\.\w{2,}$');
+    if (!emailRegex.hasMatch(_emailController.text.trim())) {
+      setState(() => _errorMessage = 'Please enter a valid email address');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     final result = await ApiService().login(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
+      email: _sanitize(_emailController.text),
+      password: _sanitize(_passwordController.text),
     );
 
     if (!mounted) return;
@@ -45,7 +67,7 @@ class _SignInScreenState extends State<SignInScreen> {
     if (result.success) {
       context.go('/home');
     } else {
-      setState(() => _errorMessage = result.error);
+      setState(() => _errorMessage = 'Invalid credentials or access denied.');
     }
   }
 
@@ -61,6 +83,7 @@ class _SignInScreenState extends State<SignInScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           // ── splash_bg.png as background top ─────────────────────────
@@ -78,6 +101,7 @@ class _SignInScreenState extends State<SignInScreen> {
           // ── Main content ──────────────────────────────────────────────
           SafeArea(
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.symmetric(horizontal: 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,9 +173,11 @@ class _SignInScreenState extends State<SignInScreen> {
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 22, vertical: 16),
                         suffixIcon: IconButton(
-                          icon: const Icon(
-                            Icons.visibility_off_outlined,
-                            color: Color(0xFFAAAAAA),
+                          icon: Icon(
+                            _isPasswordVisible
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            color: const Color(0xFFAAAAAA),
                           ),
                           onPressed: () => setState(
                                   () => _isPasswordVisible = !_isPasswordVisible),

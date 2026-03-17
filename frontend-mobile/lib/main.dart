@@ -137,7 +137,7 @@ class _MyAppState extends State<MyApp> {
   // ══════════════════════════════════════════════════════════════════
   GoRouter _createRouter() {
     return GoRouter(
-      initialLocation: '/free-trial',
+      initialLocation: widget.seenOnboarding ? '/signin' : '/onboarding',
       routes: [
         // ── Home ──────────────────────────────────────────────────────
         GoRoute(

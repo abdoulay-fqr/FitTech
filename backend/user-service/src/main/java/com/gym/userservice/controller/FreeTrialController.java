@@ -20,6 +20,10 @@ public class FreeTrialController {
     private final FreeTrialService freeTrialService;
 
     // ─── Public ──────────────────────────────────────────────────────
+    @GetMapping("/check")
+    public ResponseEntity<Map<String, Object>> checkFreeTrial(@RequestParam String email) {
+        return ResponseEntity.ok(freeTrialService.checkFreeTrial(email));
+    }
 
     // ─── Admin only ──────────────────────────────────────────────────
     @GetMapping

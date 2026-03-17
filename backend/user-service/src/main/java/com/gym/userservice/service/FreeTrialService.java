@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -53,5 +55,18 @@ public class FreeTrialService {
 
     public void deleteTrial(String id) {
         freeTrialRepository.deleteById(id);
+    }
+
+    public Map<String, Object> checkFreeTrial(String email) {
+        Optional<FreeTrial> trial = freeTrialRepository.findByEmail(email);
+
+        if (trial.isEmpty()) {
+            return Map.of("exists", false);
+        }
+
+        return Map.of(
+                "exists", true,
+                "used", trial.get().isUsed()
+        );
     }
 }

@@ -224,4 +224,10 @@ public class AuthService {
     public boolean emailExists(String email) {
         return repository.existsByEmail(email);
     }
+
+    public String getUserRole(String email) {
+        UserCredential user = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getRole().name();
+    }
 }

@@ -82,4 +82,10 @@ public class AuthController {
         authService.resetPassword(request);
         return ResponseEntity.ok("Password reset successfully");
     }
+
+    // ─── Getting the user role ──────────────────────────────────────────────
+    @GetMapping("/role")
+    public ResponseEntity<String> getUserRole(@RequestParam String email) {
+        return ResponseEntity.ok(authService.getUserRole(email));
+    }
 }

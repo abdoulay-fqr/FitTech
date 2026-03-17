@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Button from "../Button";
-import { forgotPassword } from "../../api/auth.service"; 
+import { forgotPassword } from "../../api/auth.service";
+import axiosInstance from "../../api/axiosInstance";
 
 interface Props {
   onConfirm: (email: string) => void;
@@ -12,20 +13,49 @@ export default function ForgotForm({ onConfirm, onBack }: Props) {
   const [emailError, setEmailError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!email) {
-      setEmailError("Email is required.");
-      return;
-    }
+  // ──► Step 1: Check empty
+  if (!email) {
+    setEmailError("Email is required.");
+    return;
+  }
 
-    try {
-      await forgotPassword(email);
-      onConfirm(email); // ✅ passe à EmailSentCard
-    } catch (error: any) {
-      setEmailError("Email is incorrect.");
-    }
-  };
+  // ──► Step 2: Validate email format
+  const emailRegex = /^[\w.-]+@[\w.-]+\.\w{2,}$/;
+  if (!emailRegex.test(email)) {
+    setEmailError("Please enter a valid email address.");
+    return;
+  }
+
+  // ──► Step 3: Check if email exists and role
+try {
+  const existsResponse = await axiosInstance.get(`/auth/exists?email=${email}`);
+  if (!existsResponse.data) {
+    setEmailError("No account found with this email.");
+    return;
+  }
+
+  // ──► Check role
+  const roleResponse = await axiosInstance.get(`/auth/role?email=${email}`);
+  const role = roleResponse.data;
+  if (role === "MEMBRE") {
+    setEmailError("Members must reset their password via the mobile app.");
+    return;
+  }
+} catch {
+  setEmailError("Something went wrong. Try again later.");
+  return;
+}
+
+  // ──► Step 4: Send reset email
+  try {
+    await forgotPassword(email);
+    onConfirm(email);
+  } catch {
+    setEmailError("Failed to send reset email. Try again later.");
+  }
+};
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-12 flex flex-col gap-6 relative z-10">

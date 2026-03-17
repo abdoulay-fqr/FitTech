@@ -31,7 +31,8 @@ public class SecurityConfig {
                                 "/auth/forgot-password",
                                 "/auth/reset-password",
                                 "/auth/exists",
-                                "/auth/validate"
+                                "/auth/validate",
+                                "/auth/role"
 
                         ).permitAll()
                         .anyRequest().authenticated()

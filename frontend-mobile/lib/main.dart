@@ -137,7 +137,7 @@ class _MyAppState extends State<MyApp> {
   // ══════════════════════════════════════════════════════════════════
   GoRouter _createRouter() {
     return GoRouter(
-      initialLocation: widget.seenOnboarding ? '/signin' : '/onboarding',
+      initialLocation: '/free-trial',
       routes: [
         // ── Home ──────────────────────────────────────────────────────
         GoRoute(
@@ -196,7 +196,9 @@ class _MyAppState extends State<MyApp> {
         ),
         GoRoute(
           path: '/free-trial/success',
-          builder: (context, state) => const TrialSuccessScreen(),
+          builder: (context, state) => TrialSuccessScreen(
+  trialId: state.extra as String? ?? 'N/A',
+),
         ),
       ],
     );
@@ -208,6 +210,7 @@ class _MyAppState extends State<MyApp> {
       title: 'Fit-Tech',
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
+      builder: (context, child) => child!,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFFCC00)),
         useMaterial3: true,

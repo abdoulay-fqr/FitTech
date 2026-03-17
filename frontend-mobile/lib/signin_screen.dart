@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'api_service.dart';
+import 'utils/toast_helper.dart';
+import 'utils/validators.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -14,7 +16,6 @@ class _SignInScreenState extends State<SignInScreen> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
-  String? _errorMessage;
 
   @override
   void dispose() {
@@ -24,16 +25,61 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _onSignIn() async {
-    setState(() => _errorMessage = null);
-
+    // ──► Step 1: Check empty fields
     if (_emailController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Please fill in all fields');
+      ToastHelper.showError(context, 'Please fill in all fields');
+      return;
+    }
+
+    // ──► Step 2: Validate email format
+    final emailError = Validators.email(_emailController.text.trim());
+    if (emailError != null) {
+      ToastHelper.showError(context, emailError);
       return;
     }
 
     setState(() => _isLoading = true);
 
+    // ──► Step 3: Check if email exists
+    final existsResult = await ApiService().checkEmailExists(
+      email: _emailController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (!existsResult.success) {
+      setState(() => _isLoading = false);
+      ToastHelper.showError(context, 'Something went wrong. Try again later.');
+      return;
+    }
+
+    if (existsResult.data == false) {
+      setState(() => _isLoading = false);
+      ToastHelper.showError(context, 'No account found with this email.');
+      return;
+    }
+
+    // ──► Step 4: Check role
+    final roleResult = await ApiService().checkUserRole(
+      email: _emailController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (!roleResult.success) {
+      setState(() => _isLoading = false);
+      ToastHelper.showError(context, 'Something went wrong. Try again later.');
+      return;
+    }
+
+    if (roleResult.data != 'MEMBRE') {
+      setState(() => _isLoading = false);
+      ToastHelper.showError(context, 'Access denied. Please use the web platform.');
+      return;
+    }
+
+    // ──► Step 5: Attempt login
     final result = await ApiService().login(
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
@@ -45,7 +91,12 @@ class _SignInScreenState extends State<SignInScreen> {
     if (result.success) {
       context.go('/home');
     } else {
-      setState(() => _errorMessage = result.error);
+      final error = result.error ?? '';
+      if (error.contains('suspended') || error.contains('Suspended')) {
+        ToastHelper.showError(context, 'Your account has been suspended.');
+      } else {
+        ToastHelper.showError(context, 'Incorrect password. Please try again.');
+      }
     }
   }
 
@@ -61,6 +112,7 @@ class _SignInScreenState extends State<SignInScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           // ── splash_bg.png as background top ─────────────────────────
@@ -76,8 +128,10 @@ class _SignInScreenState extends State<SignInScreen> {
           ),
 
           // ── Main content ──────────────────────────────────────────────
-          SafeArea(
+          GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
             child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,12 +203,14 @@ class _SignInScreenState extends State<SignInScreen> {
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 22, vertical: 16),
                         suffixIcon: IconButton(
-                          icon: const Icon(
-                            Icons.visibility_off_outlined,
-                            color: Color(0xFFAAAAAA),
+                          icon: Icon(
+                            _isPasswordVisible
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            color: const Color(0xFFAAAAAA),
                           ),
                           onPressed: () => setState(
-                                  () => _isPasswordVisible = !_isPasswordVisible),
+                              () => _isPasswordVisible = !_isPasswordVisible),
                         ),
                       ),
                     ),
@@ -208,27 +264,6 @@ class _SignInScreenState extends State<SignInScreen> {
 
                   const SizedBox(height: 16),
 
-                  // ── Error message ────────────────────────────────
-                  if (_errorMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.red.shade200),
-                      ),
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
                   // ── Sign In button ───────────────────────────────
                   SizedBox(
                     width: double.infinity,
@@ -245,21 +280,21 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                       child: _isLoading
                           ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.black,
-                        ),
-                      )
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.black,
+                              ),
+                            )
                           : const Text(
-                        'Sign in',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
+                              'Sign in',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
                     ),
                   ),
 

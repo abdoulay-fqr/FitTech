@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'api_service.dart';
+import 'utils/toast_helper.dart';
+import 'utils/validators.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -11,9 +13,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
-  bool _showError = false;
   bool _isLoading = false;
-  String _errorText = "The address you entered doesn't exist";
 
   @override
   void dispose() {
@@ -22,35 +22,73 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Future<void> _onContinue() async {
-    if (_emailController.text.trim().isEmpty) {
-      setState(() {
-        _showError = true;
-        _errorText = 'Please enter your email address';
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _showError = false;
-    });
-
-    final result = await ApiService().forgotPassword(
-      email: _emailController.text.trim(),
-    );
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (result.success) {
-      context.push('/forgot-password/sent', extra: _emailController.text.trim());
-    } else {
-      setState(() {
-        _showError = true;
-        _errorText = result.error ?? "The address you entered doesn't exist";
-      });
-    }
+  // ──► Step 1: Check empty
+  if (_emailController.text.trim().isEmpty) {
+    ToastHelper.showError(context, 'Please fill in all fields');
+    return;
   }
+
+  // ──► Step 2: Validate email format
+  final emailError = Validators.email(_emailController.text.trim());
+  if (emailError != null) {
+    ToastHelper.showError(context, emailError);
+    return;
+  }
+
+  setState(() => _isLoading = true);
+
+  // ──► Step 3: Check if email exists
+  final existsResult = await ApiService().checkEmailExists(
+    email: _emailController.text.trim(),
+  );
+
+  if (!mounted) return;
+
+  if (!existsResult.success) {
+    setState(() => _isLoading = false);
+    ToastHelper.showError(context, 'Something went wrong. Try again later.');
+    return;
+  }
+
+  if (existsResult.data == false) {
+    setState(() => _isLoading = false);
+    ToastHelper.showError(context, 'No account found with this email.');
+    return;
+  }
+
+  // ──► Step 4: Check role
+  final roleResult = await ApiService().checkUserRole(
+    email: _emailController.text.trim(),
+  );
+
+  if (!mounted) return;
+
+  if (!roleResult.success) {
+    setState(() => _isLoading = false);
+    ToastHelper.showError(context, 'Something went wrong. Try again later.');
+    return;
+  }
+
+  if (roleResult.data != 'MEMBRE') {
+    setState(() => _isLoading = false);
+    ToastHelper.showError(context, 'Please use the web platform to reset your password.');
+    return;
+  }
+
+  // ──► Step 5: Send reset email
+  final result = await ApiService().forgotPassword(
+    email: _emailController.text.trim(),
+  );
+
+  if (!mounted) return;
+  setState(() => _isLoading = false);
+
+  if (result.success) {
+    context.push('/forgot-password/sent', extra: _emailController.text.trim());
+  } else {
+    ToastHelper.showError(context, result.error ?? 'Something went wrong. Try again later.');
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +170,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     child: TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      onChanged: (_) => setState(() => _showError = false),
                       decoration: const InputDecoration(
                         hintText: 'Email address',
                         hintStyle: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
@@ -141,19 +178,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                     ),
                   ),
-
-                  // Error message
-                  if (_showError)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10, left: 8),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          _errorText,
-                          style: const TextStyle(color: Colors.red, fontSize: 13),
-                        ),
-                      ),
-                    ),
 
                   const Spacer(flex: 3),
 

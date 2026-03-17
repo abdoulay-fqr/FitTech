@@ -15,7 +15,6 @@ dependencies:
   dio: ^5.4.0
   app_links: ^6.3.2
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -26,22 +25,13 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/icon_logo.png"
+  image_path: "assets/icons/app_icon.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/icon_logo.png"
+  web:
+    generate: false
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/logoo.png
-    - assets/images/logo.png
-    - assets/images/icon_logo.png
-    - assets/images/background_image.png
-    - assets/images/carousel1.png
-    - assets/images/carousel2.png
-    - assets/images/carousel3.png
-    - assets/images/carousel4.png
-    - assets/images/splash_bg.png
-    - assets/images/signup_bg.png
-    - assets/images/tr_success_bg.png
+    - assets/images/
+    - assets/icons/

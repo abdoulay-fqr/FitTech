@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.0.2.2:8080';
+  static const String baseUrl = 'http://192.168.1.5:8080';
   final Dio _dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,
@@ -103,6 +103,71 @@ class ApiService {
   }
 
   // ══════════════════════════════════════════════════════════════════
+// 🎟️ FREE TRIAL
+// ══════════════════════════════════════════════════════════════════
+Future<ApiResult> freeTrial({
+  required String fullName,
+  required String email,
+}) async {
+  try {
+    final response = await _dio.post(
+      '/users/trials',
+      data: {
+        'fullName': fullName,
+        'email': email,
+      },
+    );
+    return ApiResult.success(response.data);
+  } on DioException catch (e) {
+    return ApiResult.error(_handleError(e));
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 🔍 CHECK FREE TRIAL
+// ══════════════════════════════════════════════════════════════════
+Future<ApiResult> checkFreeTrial({required String email}) async {
+  try {
+    final response = await _dio.get(
+      '/users/trials/check',
+      queryParameters: {'email': email},
+    );
+    return ApiResult.success(response.data);
+  } on DioException catch (e) {
+    return ApiResult.error(_handleError(e));
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 🔍 CHECK EMAIL EXISTS
+// ══════════════════════════════════════════════════════════════════
+Future<ApiResult> checkEmailExists({required String email}) async {
+  try {
+    final response = await _dio.get(
+      '/auth/exists',
+      queryParameters: {'email': email},
+    );
+    return ApiResult.success(response.data);
+  } on DioException catch (e) {
+    return ApiResult.error(_handleError(e));
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 🔍 CHECK USER ROLE
+// ══════════════════════════════════════════════════════════════════
+Future<ApiResult> checkUserRole({required String email}) async {
+  try {
+    final response = await _dio.get(
+      '/auth/role',
+      queryParameters: {'email': email},
+    );
+    return ApiResult.success(response.data);
+  } on DioException catch (e) {
+    return ApiResult.error(_handleError(e));
+  }
+}
+  // ══════════════════════════════════════════════════════════════════
   // 💾 SAVE TOKEN
   // ══════════════════════════════════════════════════════════════════
   Future<void> _saveToken(dynamic data) async {
@@ -144,15 +209,23 @@ class ApiService {
       case DioExceptionType.connectionError:
         return 'Cannot connect to server. Check your network.';
       case DioExceptionType.badResponse:
-        final statusCode = e.response?.statusCode;
-        final message = e.response?.data?.toString() ?? '';
-        if (statusCode == 400) {
-          if (message.contains('expired')) return 'Link expired. Please request a new one.';
-          if (message.contains('invalid') || message.contains('Invalid')) return 'Invalid or already used link.';
-          if (message.contains('password') || message.contains('Password')) return 'Password must be at least 6 characters.';
-          if (message.contains('Email') || message.contains('email')) return 'Please enter a valid email.';
-          return 'Invalid request. Please try again.';
-        }
+  final statusCode = e.response?.statusCode;
+  final data = e.response?.data;
+
+  // ✅ Extract message from backend JSON response
+  if (data is Map && data.containsKey('message')) {
+    return data['message'];
+  }
+
+  // Fallback for non-JSON responses
+  final message = data?.toString() ?? '';
+  if (statusCode == 400) {
+    if (message.contains('expired')) return 'Link expired. Please request a new one.';
+    if (message.contains('invalid') || message.contains('Invalid')) return 'Invalid or already used link.';
+    if (message.contains('password') || message.contains('Password')) return 'Password must be at least 6 characters.';
+    if (message.contains('Email') || message.contains('email')) return 'Please enter a valid email.';
+    return 'Invalid request. Please try again.';
+  }
         if (statusCode == 401) return 'Invalid email or password.';
         if (statusCode == 403) return 'Access denied.';
         if (statusCode == 404) return 'Account not found.';

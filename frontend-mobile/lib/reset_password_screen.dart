@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'api_service.dart';
+import 'utils/toast_helper.dart';
+import 'utils/validators.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String token;
@@ -13,11 +15,9 @@ class ResetPasswordScreen extends StatefulWidget {
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _showError = false;
   bool _isLoading = false;
   bool _newPasswordVisible = false;
   bool _confirmPasswordVisible = false;
-  String _errorText = "The password you entered doesn't match the first one";
 
   @override
   void dispose() {
@@ -27,50 +27,49 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   Future<void> _onSaveChanges() async {
-    if (_newPasswordController.text.isEmpty) {
-      setState(() {
-        _showError = true;
-        _errorText = 'Please enter a new password';
-      });
-      return;
-    }
-    if (_newPasswordController.text != _confirmPasswordController.text) {
-      setState(() {
-        _showError = true;
-        _errorText = "The password you entered doesn't match the first one";
-      });
-      return;
-    }
-    if (_newPasswordController.text.length < 6) {
-      setState(() {
-        _showError = true;
-        _errorText = 'Password must be at least 6 characters';
-      });
-      return;
-    }
+  // ──► Step 1: Check empty fields
+  if (_newPasswordController.text.isEmpty ||
+      _confirmPasswordController.text.isEmpty) {
+    ToastHelper.showError(context, 'Please fill in all fields');
+    return;
+  }
 
-    setState(() {
-      _isLoading = true;
-      _showError = false;
-    });
+  // ──► Step 2: Validate password length
+  final passwordError = Validators.password(_newPasswordController.text.trim());
+  if (passwordError != null) {
+    ToastHelper.showError(context, passwordError);
+    return;
+  }
 
-    final result = await ApiService().resetPassword(
-      token: widget.token,
-      newPassword: _newPasswordController.text.trim(),
-    );
+  // ──► Step 3: Check passwords match
+  if (_newPasswordController.text != _confirmPasswordController.text) {
+    ToastHelper.showError(context, 'Passwords do not match');
+    return;
+  }
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+  setState(() => _isLoading = true);
 
-    if (result.success) {
-      context.go('/reset-password/success');
+  final result = await ApiService().resetPassword(
+    token: widget.token,
+    newPassword: _newPasswordController.text.trim(),
+  );
+
+  if (!mounted) return;
+  setState(() => _isLoading = false);
+
+  if (result.success) {
+    context.go('/reset-password/success');
+  } else {
+    final error = result.error ?? '';
+    if (error.contains('expired')) {
+      ToastHelper.showError(context, 'Reset link has expired. Please request a new one.');
+    } else if (error.contains('invalid') || error.contains('Invalid')) {
+      ToastHelper.showError(context, 'Invalid or already used reset link.');
     } else {
-      setState(() {
-        _showError = true;
-        _errorText = result.error ?? 'Something went wrong';
-      });
+      ToastHelper.showError(context, 'Something went wrong. Try again later.');
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -139,15 +138,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     child: TextField(
                       controller: _newPasswordController,
                       obscureText: !_newPasswordVisible,
-                      onChanged: (_) => setState(() => _showError = false),
                       decoration: InputDecoration(
                         hintText: 'New password',
                         hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
                         suffixIcon: IconButton(
-                          icon: Icon(Icons.visibility_off_outlined, color: const Color(0xFFAAAAAA)),
-                          onPressed: () => setState(() => _newPasswordVisible = !_newPasswordVisible),
+                          icon: Icon(
+  _confirmPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+  color: const Color(0xFFAAAAAA),
+),
+onPressed: () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
                         ),
                       ),
                     ),
@@ -164,32 +165,21 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     child: TextField(
                       controller: _confirmPasswordController,
                       obscureText: !_confirmPasswordVisible,
-                      onChanged: (_) => setState(() => _showError = false),
                       decoration: InputDecoration(
                         hintText: 'Confirmation of the new password',
                         hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
                         suffixIcon: IconButton(
-                          icon: Icon(Icons.visibility_off_outlined, color: const Color(0xFFAAAAAA)),
-                          onPressed: () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
+                          icon: Icon(
+  _newPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+  color: const Color(0xFFAAAAAA),
+),
+onPressed: () => setState(() => _newPasswordVisible = !_newPasswordVisible),
                         ),
                       ),
                     ),
                   ),
-
-                  // Error
-                  if (_showError)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10, left: 8),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          _errorText,
-                          style: const TextStyle(color: Colors.red, fontSize: 13),
-                        ),
-                      ),
-                    ),
 
                   const Spacer(flex: 2),
 

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class TrialSuccessScreen extends StatelessWidget {
-  const TrialSuccessScreen({super.key});
+  final String trialId;
+  const TrialSuccessScreen({super.key, required this.trialId});
 
   @override
   Widget build(BuildContext context) {
@@ -56,15 +57,15 @@ class TrialSuccessScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Description
-                  const Text(
-                    'You have won a free trial session under ID 457457. Show this number to the receptionist along with your ID card.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF666666),
-                      height: 1.6,
-                    ),
-                  ),
+                  Text(
+  'You have won a free trial session under ID ${trialId.length >= 8 ? trialId.substring(0, 8).toUpperCase() : trialId.toUpperCase()}. Show this to the receptionist along with your ID card.',
+  textAlign: TextAlign.center,
+  style: const TextStyle(
+    fontSize: 14,
+    color: Color(0xFF666666),
+    height: 1.6,
+  ),
+),
 
                   const Spacer(flex: 3),
 

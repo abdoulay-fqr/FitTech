@@ -25,80 +25,43 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _onSignIn() async {
-    // ──► Step 1: Check empty fields
-    if (_emailController.text.trim().isEmpty ||
-        _passwordController.text.trim().isEmpty) {
-      ToastHelper.showError(context, 'Please fill in all fields');
-      return;
-    }
+  // ──► Step 1: Check empty fields
+  if (_emailController.text.trim().isEmpty ||
+      _passwordController.text.trim().isEmpty) {
+    ToastHelper.showError(context, 'Please fill in all fields');
+    return;
+  }
 
-    // ──► Step 2: Validate email format
-    final emailError = Validators.email(_emailController.text.trim());
-    if (emailError != null) {
-      ToastHelper.showError(context, emailError);
-      return;
-    }
+  // ──► Step 2: Validate email format
+  final emailError = Validators.email(_emailController.text.trim());
+  if (emailError != null) {
+    ToastHelper.showError(context, emailError);
+    return;
+  }
 
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    // ──► Step 3: Check if email exists
-    final existsResult = await ApiService().checkEmailExists(
-      email: _emailController.text.trim(),
-    );
+  // ──► Step 3: Attempt login
+  final result = await ApiService().login(
+    email: _emailController.text.trim(),
+    password: _passwordController.text.trim(),
+  );
 
-    if (!mounted) return;
+  if (!mounted) return;
+  setState(() => _isLoading = false);
 
-    if (!existsResult.success) {
-      setState(() => _isLoading = false);
-      ToastHelper.showError(context, 'Something went wrong. Try again later.');
-      return;
-    }
-
-    if (existsResult.data == false) {
-      setState(() => _isLoading = false);
-      ToastHelper.showError(context, 'No account found with this email.');
-      return;
-    }
-
-    // ──► Step 4: Check role
-    final roleResult = await ApiService().checkUserRole(
-      email: _emailController.text.trim(),
-    );
-
-    if (!mounted) return;
-
-    if (!roleResult.success) {
-      setState(() => _isLoading = false);
-      ToastHelper.showError(context, 'Something went wrong. Try again later.');
-      return;
-    }
-
-    if (roleResult.data != 'MEMBRE') {
-      setState(() => _isLoading = false);
-      ToastHelper.showError(context, 'Access denied. Please use the web platform.');
-      return;
-    }
-
-    // ──► Step 5: Attempt login
-    final result = await ApiService().login(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-    );
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (result.success) {
+  if (result.success) {
+    final role = result.data['role'];
+    if (role == 'MEMBRE') {
       context.go('/home');
     } else {
-      final error = result.error ?? '';
-      if (error.contains('suspended') || error.contains('Suspended')) {
-        ToastHelper.showError(context, 'Your account has been suspended.');
-      } else {
-        ToastHelper.showError(context, 'Incorrect password. Please try again.');
-      }
+      await ApiService().logout();
+      ToastHelper.showError(context, 'Invalid email or password.');
     }
+  } else {
+    ToastHelper.showError(context, 'Invalid email or password.');
   }
+}
 
   void _onCreateAccount() {
     context.go('/signup');

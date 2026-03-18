@@ -5,7 +5,6 @@ import logo from "../assets/logo.png";
 import gymBg from "../assets/gym-bg.jpg";
 import Footer from '../components/Footer';
 import { login } from "../api/auth.service";
-import axiosInstance from "../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
 
 
@@ -23,7 +22,7 @@ export default function LoginPage() {
   
 
   // --- 2. MÉTHODES (LOGIQUE) ---
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   // ──► Step 1: Check empty fields
@@ -47,15 +46,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     return;
   }
 
+  // ──► Step 3: Attempt login
   try {
-    // ──► Step 3: Check if email exists
-    const existsResponse = await axiosInstance.get(`/auth/exists?email=${email}`);
-    if (!existsResponse.data) {
-      setErrors({ email: "No account found with this email", password: "" });
-      return;
-    }
-
-    // ──► Step 4: Attempt login
     const data = await login(email, password);
     localStorage.setItem("token", data.token);
     localStorage.setItem("role", data.role);
@@ -65,23 +57,10 @@ const handleSubmit = async (e: React.FormEvent) => {
     } else if (data.role === "COACH") {
       navigate("/coach/home");
     } else {
-      setErrors({
-        email: "",
-        password: "Access denied. Please use the mobile app.",
-      });
+      setErrors({ email: "", password: "Invalid email or password." });
     }
-  } catch (error: any) {
-    const status = error.response?.status;
-    if (status === 401 || status === 403) {
-      setErrors({ email: "", password: "Incorrect password. Please try again." });
-    } else if (status === 500) {
-      const message = error.response?.data?.message ?? "";
-      if (message.includes("suspended")) {
-        setErrors({ email: "", password: "Your account has been suspended." });
-      } else {
-        setErrors({ email: "", password: "Something went wrong. Try again later." });
-      }
-    }
+  } catch {
+    setErrors({ email: "", password: "Invalid email or password." });
   }
 };
 

@@ -37,45 +37,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   setState(() => _isLoading = true);
 
-  // ──► Step 3: Check if email exists
-  final existsResult = await ApiService().checkEmailExists(
-    email: _emailController.text.trim(),
-  );
-
-  if (!mounted) return;
-
-  if (!existsResult.success) {
-    setState(() => _isLoading = false);
-    ToastHelper.showError(context, 'Something went wrong. Try again later.');
-    return;
-  }
-
-  if (existsResult.data == false) {
-    setState(() => _isLoading = false);
-    ToastHelper.showError(context, 'No account found with this email.');
-    return;
-  }
-
-  // ──► Step 4: Check role
-  final roleResult = await ApiService().checkUserRole(
-    email: _emailController.text.trim(),
-  );
-
-  if (!mounted) return;
-
-  if (!roleResult.success) {
-    setState(() => _isLoading = false);
-    ToastHelper.showError(context, 'Something went wrong. Try again later.');
-    return;
-  }
-
-  if (roleResult.data != 'MEMBRE') {
-    setState(() => _isLoading = false);
-    ToastHelper.showError(context, 'Please use the web platform to reset your password.');
-    return;
-  }
-
-  // ──► Step 5: Send reset email
+  // ──► Step 3: Send reset email
   final result = await ApiService().forgotPassword(
     email: _emailController.text.trim(),
   );
@@ -83,11 +45,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   if (!mounted) return;
   setState(() => _isLoading = false);
 
-  if (result.success) {
-    context.push('/forgot-password/sent', extra: _emailController.text.trim());
-  } else {
-    ToastHelper.showError(context, result.error ?? 'Something went wrong. Try again later.');
-  }
+  context.push('/forgot-password/sent', extra: _emailController.text.trim());
 }
 
   @override

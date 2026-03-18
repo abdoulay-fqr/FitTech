@@ -70,22 +70,12 @@ public class AuthController {
     public ResponseEntity<AuthResponse> createAdmin(@RequestBody CreateAdminRequest request) {
         return ResponseEntity.ok(authService.createAdmin(request));
     }
-    // email exixt dans auth db or no for freetrial
-    @GetMapping("/exists")
-    public ResponseEntity<Boolean> emailExists(@RequestParam String email) {
-        return ResponseEntity.ok(authService.emailExists(email));
-    }
+
     // ─── Reset password ──────────────────────────────────────────────
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok("Password reset successfully");
-    }
-
-    // ─── Getting the user role ──────────────────────────────────────────────
-    @GetMapping("/role")
-    public ResponseEntity<String> getUserRole(@RequestParam String email) {
-        return ResponseEntity.ok(authService.getUserRole(email));
     }
 }

@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.1.5:8080';
+  static const String baseUrl = 'http://192.168.1.8:8080';
   final Dio _dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,
@@ -138,35 +138,6 @@ Future<ApiResult> checkFreeTrial({required String email}) async {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════
-// 🔍 CHECK EMAIL EXISTS
-// ══════════════════════════════════════════════════════════════════
-Future<ApiResult> checkEmailExists({required String email}) async {
-  try {
-    final response = await _dio.get(
-      '/auth/exists',
-      queryParameters: {'email': email},
-    );
-    return ApiResult.success(response.data);
-  } on DioException catch (e) {
-    return ApiResult.error(_handleError(e));
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════
-// 🔍 CHECK USER ROLE
-// ══════════════════════════════════════════════════════════════════
-Future<ApiResult> checkUserRole({required String email}) async {
-  try {
-    final response = await _dio.get(
-      '/auth/role',
-      queryParameters: {'email': email},
-    );
-    return ApiResult.success(response.data);
-  } on DioException catch (e) {
-    return ApiResult.error(_handleError(e));
-  }
-}
   // ══════════════════════════════════════════════════════════════════
   // 💾 SAVE TOKEN
   // ══════════════════════════════════════════════════════════════════
@@ -227,7 +198,7 @@ Future<ApiResult> checkUserRole({required String email}) async {
     return 'Invalid request. Please try again.';
   }
         if (statusCode == 401) return 'Invalid email or password.';
-        if (statusCode == 403) return 'Access denied.';
+        if (statusCode == 403) return 'Invalid email or password.';
         if (statusCode == 404) return 'Account not found.';
         if (statusCode == 409) return 'Email already registered.';
         if (statusCode == 500) return 'Server error. Try again later.';

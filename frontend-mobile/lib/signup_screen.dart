@@ -32,83 +32,65 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _onRegister() async {
-    if (_firstNameController.text.trim().isEmpty ||
-    _secondNameController.text.trim().isEmpty ||
-    _emailController.text.trim().isEmpty ||
-    _passwordController.text.trim().isEmpty) {
-  ToastHelper.showError(context, 'Please fill in all fields');
-  return;
-}
-    final firstNameError = Validators.name(_firstNameController.text.trim(), 'First name');
-if (firstNameError != null) {
-  ToastHelper.showError(context, firstNameError);
-  return;
-}
-
-final lastNameError = Validators.name(_secondNameController.text.trim(), 'Last name');
-if (lastNameError != null) {
-  ToastHelper.showError(context, lastNameError);
-  return;
-}
-
-final emailError = Validators.email(_emailController.text.trim());
-if (emailError != null) {
-  ToastHelper.showError(context, emailError);
-  return;
-}
-
-final passwordError = Validators.password(_passwordController.text.trim());
-if (passwordError != null) {
-  ToastHelper.showError(context, passwordError);
-  return;
-}
-
-    if (!_acceptedTerms) {
-  ToastHelper.showError(context, 'Please accept the terms and conditions');
-  return;
-}
-
-setState(() => _isLoading = true);
-
-// ──► Check if email already exists
-final existsResult = await ApiService().checkEmailExists(
-  email: _emailController.text.trim(),
-);
-
-if (!mounted) return;
-
-if (!existsResult.success) {
-  setState(() => _isLoading = false);
-  ToastHelper.showError(context, 'Something went wrong. Try again later.');
-  return;
-}
-
-if (existsResult.data == true) {
-  setState(() => _isLoading = false);
-  ToastHelper.showError(context, 'This email is already registered. Please sign in instead.');
-  return;
-}
-
-    final result = await ApiService().register(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-      firstName: _firstNameController.text.trim(),
-      secondName: _secondNameController.text.trim(),
-      gender: _selectedCivility == 'Man' ? 'MALE' : 'FEMALE',
-    );
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (result.success) {
-      ToastHelper.showSuccess(context, 'Account created successfully!');
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted) return;
-      context.go('/signin');
-    } else {
-      ToastHelper.showError(context, result.error ?? 'Something went wrong');
-    }
+  if (_firstNameController.text.trim().isEmpty ||
+      _secondNameController.text.trim().isEmpty ||
+      _emailController.text.trim().isEmpty ||
+      _passwordController.text.trim().isEmpty) {
+    ToastHelper.showError(context, 'Please fill in all fields');
+    return;
   }
+
+  final firstNameError = Validators.name(_firstNameController.text.trim(), 'First name');
+  if (firstNameError != null) {
+    ToastHelper.showError(context, firstNameError);
+    return;
+  }
+
+  final lastNameError = Validators.name(_secondNameController.text.trim(), 'Last name');
+  if (lastNameError != null) {
+    ToastHelper.showError(context, lastNameError);
+    return;
+  }
+
+  final emailError = Validators.email(_emailController.text.trim());
+  if (emailError != null) {
+    ToastHelper.showError(context, emailError);
+    return;
+  }
+
+  final passwordError = Validators.password(_passwordController.text.trim());
+  if (passwordError != null) {
+    ToastHelper.showError(context, passwordError);
+    return;
+  }
+
+  if (!_acceptedTerms) {
+    ToastHelper.showError(context, 'Please accept the terms and conditions');
+    return;
+  }
+
+  setState(() => _isLoading = true);
+
+  final result = await ApiService().register(
+    email: _emailController.text.trim(),
+    password: _passwordController.text.trim(),
+    firstName: _firstNameController.text.trim(),
+    secondName: _secondNameController.text.trim(),
+    gender: _selectedCivility == 'Man' ? 'MALE' : 'FEMALE',
+  );
+
+  if (!mounted) return;
+  setState(() => _isLoading = false);
+
+  if (result.success) {
+    ToastHelper.showSuccess(context, 'Account created successfully!');
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    context.go('/signin');
+  } else {
+    ToastHelper.showError(context, 'Something went wrong. Try again later.');
+  }
+}
 
   void _onSignIn() {
     context.go('/signin');

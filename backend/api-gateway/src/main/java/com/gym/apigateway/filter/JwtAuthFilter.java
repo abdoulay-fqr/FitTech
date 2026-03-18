@@ -24,8 +24,6 @@ public class JwtAuthFilter implements HandlerFilterFunction<ServerResponse, Serv
             "/auth/admin",
             "/auth/forgot-password",
             "/auth/reset-password",
-            "/auth/exists",
-            "/auth/role",
             "/users/members/nfc/check",
             "/users/trials"
     );

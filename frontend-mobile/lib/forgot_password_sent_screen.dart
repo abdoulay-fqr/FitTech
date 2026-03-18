@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ForgotPasswordSentScreen extends StatelessWidget {
   final String email;
   const ForgotPasswordSentScreen({super.key, required this.email});
+
+  Future<void> _openGmail() async {
+    final Uri gmailUri = Uri.parse('googlegmail://');
+    final Uri gmailPlayStore = Uri.parse(
+        'https://play.google.com/store/apps/details?id=com.google.android.gm');
+
+    if (await canLaunchUrl(gmailUri)) {
+      await launchUrl(gmailUri);
+    } else {
+      await launchUrl(gmailPlayStore, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +38,6 @@ class ForgotPasswordSentScreen extends StatelessWidget {
               ),
             ),
           ),
-
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 36),
@@ -45,7 +56,7 @@ class ForgotPasswordSentScreen extends StatelessWidget {
 
                   // Title
                   const Text(
-                    'The link has been sent!',
+                    'Check your inbox!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,
@@ -56,9 +67,9 @@ class ForgotPasswordSentScreen extends StatelessWidget {
 
                   const SizedBox(height: 14),
 
-                  // Description with dynamic email
+                  // Description
                   Text(
-                    'You will receive a link to reset your password at the following address: $email',
+                    'If an account with $email exists, you will receive a password reset link shortly.',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 14,
@@ -74,9 +85,7 @@ class ForgotPasswordSentScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 54,
                     child: ElevatedButton(
-                      onPressed: () {
-                        context.push('/reset-password');
-                      },
+                      onPressed: _openGmail,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFCC00),
                         foregroundColor: Colors.black,
@@ -87,7 +96,23 @@ class ForgotPasswordSentScreen extends StatelessWidget {
                       ),
                       child: const Text(
                         'Check your inbox',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Back to sign in
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Text(
+                      'Back',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF888888),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),

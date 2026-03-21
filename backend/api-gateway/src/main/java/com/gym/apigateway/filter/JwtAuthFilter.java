@@ -20,12 +20,15 @@ public class JwtAuthFilter implements HandlerFilterFunction<ServerResponse, Serv
     private static final List<String> PUBLIC_ENDPOINTS = List.of(
             "/auth/register",
             "/auth/login",
-            "/auth/coach",
-            "/auth/admin",
             "/auth/forgot-password",
             "/auth/reset-password",
             "/users/members/nfc/check",
-            "/users/trials"
+            "/users/trials",
+            "/users/trials/check",
+            "/users/members/internal",
+            "/users/coaches/internal",
+            "/users/admins/internal",
+            "/auth/internal"
     );
 
     @Override
@@ -34,7 +37,6 @@ public class JwtAuthFilter implements HandlerFilterFunction<ServerResponse, Serv
 
         String path = request.uri().getPath();
 
-        // ─── Allow public endpoints ──────────────────────────────────
         boolean isPublic = PUBLIC_ENDPOINTS.stream()
                 .anyMatch(path::startsWith);
 
@@ -42,9 +44,7 @@ public class JwtAuthFilter implements HandlerFilterFunction<ServerResponse, Serv
             return next.handle(request);
         }
 
-        // ─── Check Authorization header ──────────────────────────────
-        String authHeader = request.headers()
-                .firstHeader("Authorization");
+        String authHeader = request.headers().firstHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ServerResponse.status(401)
@@ -58,6 +58,20 @@ public class JwtAuthFilter implements HandlerFilterFunction<ServerResponse, Serv
                     .body("Invalid or expired token");
         }
 
-        return next.handle(request);
+        String userId = jwtUtil.extractId(token);
+        String role = jwtUtil.extractRole(token);
+        String finalAuthHeader = authHeader;
+
+        log.info("Gateway: path={}, userId={}, role={}", path, userId, role);
+
+        ServerRequest mutatedRequest = ServerRequest.from(request)
+                .headers(headers -> {
+                    headers.set("X-User-Id", userId);
+                    headers.set("X-User-Role", role);
+                    headers.set("Authorization", finalAuthHeader);
+                })
+                .build();
+
+        return next.handle(mutatedRequest);
     }
 }

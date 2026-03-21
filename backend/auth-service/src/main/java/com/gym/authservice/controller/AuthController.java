@@ -1,6 +1,7 @@
 package com.gym.authservice.controller;
 
 import com.gym.authservice.dto.*;
+import com.gym.authservice.model.Role;
 import com.gym.authservice.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -65,9 +66,11 @@ public class AuthController {
         authService.forgotPassword(request);
         return ResponseEntity.ok("Reset email sent successfully");
     }
-    // admiin
+
+    // ─── Create admin ────────────────────────────────────────────────
     @PostMapping("/admin")
-    public ResponseEntity<AuthResponse> createAdmin(@RequestBody CreateAdminRequest request) {
+    public ResponseEntity<AuthResponse> createAdmin(
+            @RequestBody CreateAdminRequest request) {
         return ResponseEntity.ok(authService.createAdmin(request));
     }
 
@@ -77,5 +80,90 @@ public class AuthController {
             @Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok("Password reset successfully");
+    }
+
+    // ─── Internal endpoints (called by user-service only) ────────────
+
+    @PostMapping("/internal/member")
+    public ResponseEntity<String> internalCreateMember(
+            @RequestBody InternalAuthRegisterRequest request) {
+        String authId = authService.createCredentials(
+                request.getEmail(), request.getPassword(), Role.MEMBRE);
+        return ResponseEntity.ok(authId);
+    }
+
+    @PostMapping("/internal/coach")
+    public ResponseEntity<String> internalCreateCoach(
+            @RequestBody InternalAuthRegisterRequest request) {
+        String authId = authService.createCredentials(
+                request.getEmail(), request.getPassword(), Role.COACH);
+        return ResponseEntity.ok(authId);
+    }
+
+    @PostMapping("/internal/admin")
+    public ResponseEntity<String> internalCreateAdmin(
+            @RequestBody InternalAuthRegisterRequest request) {
+        String authId = authService.createCredentials(
+                request.getEmail(), request.getPassword(), Role.ADMIN);
+        return ResponseEntity.ok(authId);
+    }
+
+    @DeleteMapping("/internal/users/{authId}")
+    public ResponseEntity<String> internalDeleteUser(
+            @PathVariable String authId) {
+        authService.deleteUser(authId);
+        return ResponseEntity.ok("User deleted successfully");
+    }
+
+    @PutMapping("/internal/reset-password/{authId}")
+    public ResponseEntity<String> internalResetPassword(
+            @PathVariable String authId,
+            @RequestBody ChangePasswordRequest request) {
+        authService.resetUserPassword(authId, request.getNewPassword());
+        return ResponseEntity.ok("Password reset successfully");
+    }
+
+    @PutMapping("/internal/change-password/{authId}")
+    public ResponseEntity<String> internalChangePassword(
+            @PathVariable String authId,
+            @RequestBody ChangePasswordRequest request) {
+        authService.changeOwnPassword(
+                authId, request.getOldPassword(), request.getNewPassword());
+        return ResponseEntity.ok("Password changed successfully");
+    }
+
+    @GetMapping("/internal/id-by-email")
+    public ResponseEntity<String> getIdByEmail(@RequestParam String email) {
+        return ResponseEntity.ok(authService.getIdByEmail(email));
+    }
+
+    @GetMapping("/exists")
+    public ResponseEntity<Boolean> emailExists(@RequestParam String email) {
+        return ResponseEntity.ok(authService.emailExists(email));
+    }
+
+    // ─── Change own password ─────────────────────────────────────────
+    @PutMapping("/change-password")
+    public ResponseEntity<String> changePassword(
+            @RequestHeader("X-User-Id") String authId,
+            @RequestBody ChangePasswordRequest request) {
+        authService.changeOwnPassword(authId, request.getOldPassword(), request.getNewPassword());
+        return ResponseEntity.ok("Password changed successfully");
+    }
+
+    // ─── Admin resets another user's password ────────────────────────
+    @PutMapping("/admin/reset-password/{authId}")
+    public ResponseEntity<String> adminResetPassword(
+            @PathVariable String authId,
+            @RequestBody ChangePasswordRequest request) {
+        authService.resetUserPassword(authId, request.getNewPassword());
+        return ResponseEntity.ok("Password reset successfully");
+    }
+
+    // ─── Admin creates member ─────────────────────────────────────────
+    @PostMapping("/member")
+    public ResponseEntity<AuthResponse> createMember(
+            @Valid @RequestBody CreateMemberRequest request) {
+        return ResponseEntity.ok(authService.createMember(request));
     }
 }

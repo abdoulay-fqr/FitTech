@@ -4,8 +4,11 @@ import lombok.Data;
 
 @Data
 public class CreateAdminRequest {
-    private String fullName;
-    private String phone;
     private String email;
     private String password;
+    private String firstName;
+    private String secondName;
+    private String phone;
+    private String birthDate;
+    private String gender;
 }

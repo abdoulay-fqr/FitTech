@@ -5,7 +5,10 @@ import com.gym.userservice.model.Member;
 import com.gym.userservice.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 @Service
@@ -16,15 +19,12 @@ public class MemberService {
 
     // ─── Create member ───────────────────────────────────────────────
     public Member createMember(CreateMemberRequest request) {
-        if (repository.existsByAuthId(request.getAuthId())) {
-            throw new RuntimeException("Member already exists");
-        }
         Member member = Member.builder()
-                .authId(request.getAuthId())
-                .fullName(request.getFullName())
+                .firstName(request.getFirstName())
+                .secondName(request.getSecondName())
                 .phone(request.getPhone())
                 .birthDate(request.getBirthDate())
-                .gender(request.getGender())        // ──► ADD THIS
+                .gender(request.getGender())
                 .objective(request.getObjective())
                 .medicalRestrictions(request.getMedicalRestrictions())
                 .nfcActive(false)
@@ -33,32 +33,33 @@ public class MemberService {
         return repository.save(member);
     }
 
-    // ─── Get all members ─────────────────────────────────────────────
-    public List<Member> getAllMembers() {
-        return repository.findAll();
+    @Transactional(readOnly = true)
+    public Page<Member> getAllMembers(String search, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        if (search != null && !search.isEmpty()) {
+            return repository.searchMembers(search, pageable);
+        }
+        return repository.findAll(pageable);
     }
-
     // ─── Get member by id ────────────────────────────────────────────
+    @Transactional(readOnly = true)
     public Member getMemberById(String id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Member not found"));
-    }
-
-    // ─── Get member by authId ────────────────────────────────────────
-    public Member getMemberByAuthId(String authId) {
-        return repository.findByAuthId(authId)
                 .orElseThrow(() -> new RuntimeException("Member not found"));
     }
 
     // ─── Update member ───────────────────────────────────────────────
     public Member updateMember(String id, UpdateMemberRequest request) {
         Member member = getMemberById(id);
-        if (request.getFullName() != null) member.setFullName(request.getFullName());
+        if (request.getFirstName() != null) member.setFirstName(request.getFirstName());
+        if (request.getSecondName() != null) member.setSecondName(request.getSecondName());
         if (request.getPhone() != null) member.setPhone(request.getPhone());
         if (request.getBirthDate() != null) member.setBirthDate(request.getBirthDate());
-        if (request.getGender() != null) member.setGender(request.getGender());  // ──► ADD HERE
+        if (request.getGender() != null) member.setGender(request.getGender());
         if (request.getObjective() != null) member.setObjective(request.getObjective());
         if (request.getMedicalRestrictions() != null) member.setMedicalRestrictions(request.getMedicalRestrictions());
+        if (request.getSubscriptionPlan() != null) member.setSubscriptionPlan(request.getSubscriptionPlan());
+        if (request.getSubscriptionStatus() != null) member.setSubscriptionStatus(request.getSubscriptionStatus());
         return repository.save(member);
     }
 
@@ -99,9 +100,16 @@ public class MemberService {
     }
 
     // ─── Check NFC card ──────────────────────────────────────────────
+    @Transactional(readOnly = true)
     public boolean checkNfcAccess(String nfcCardId) {
         return repository.findByNfcCardId(nfcCardId)
                 .map(member -> member.isNfcActive() && !member.isSuspended())
                 .orElse(false);
+    }
+
+    @Transactional(readOnly = true)
+    public Member getMemberByAuthId(String authId) {
+        return repository.findByAuthId(authId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
     }
 }

@@ -1,6 +1,5 @@
 package com.gym.authservice.service;
 
-
 import com.gym.authservice.config.InternalAdminRequest;
 import com.gym.authservice.config.InternalCoachRequest;
 import com.gym.authservice.config.InternalMemberRequest;
@@ -48,7 +47,8 @@ public class AuthService {
             userServiceClient.createMemberProfile(
                     new InternalMemberRequest(
                             user.getId(),
-                            request.getFirstName() + " " + request.getSecondName(),
+                            request.getFirstName(),
+                            request.getSecondName(),
                             request.getGender()
                     )
             );
@@ -119,8 +119,11 @@ public class AuthService {
             userServiceClient.createCoachProfile(
                     new InternalCoachRequest(
                             user.getId(),
-                            request.getFullName(),
+                            request.getFirstName(),
+                            request.getSecondName(),
                             request.getPhone(),
+                            request.getBirthDate(),
+                            request.getGender(),
                             request.getSpecialties(),
                             request.getBiography()
                     )
@@ -174,7 +177,7 @@ public class AuthService {
         user.setResetTokenExpiry(java.time.LocalDateTime.now().plusMinutes(15));
         repository.save(user);
 
-        emailService.sendResetPasswordEmail(user.getEmail(), token, request.getPlatform()); // 👈 add platform
+        emailService.sendResetPasswordEmail(user.getEmail(), token, request.getPlatform());
     }
 
     // ─── Reset password ──────────────────────────────────────────────
@@ -191,9 +194,10 @@ public class AuthService {
         user.setResetTokenExpiry(null);
         repository.save(user);
     }
-    //create admin
+
+    // ─── Create admin ────────────────────────────────────────────────
     public AuthResponse createAdmin(CreateAdminRequest request) {
-        if (repository.existsByEmail(request.getEmail())) {  // ──► repository pas userCredentialRepository
+        if (repository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
 
@@ -203,11 +207,18 @@ public class AuthService {
                 .role(Role.ADMIN)
                 .suspended(false)
                 .build();
-        repository.save(user);  // ──► repository
+        repository.save(user);
 
         try {
             userServiceClient.createAdminProfile(
-                    new InternalAdminRequest(user.getId(), request.getFullName(), request.getPhone())
+                    new InternalAdminRequest(
+                            user.getId(),
+                            request.getFirstName(),
+                            request.getSecondName(),
+                            request.getPhone(),
+                            request.getBirthDate(),
+                            request.getGender()
+                    )
             );
         } catch (Exception e) {
             log.warn("Could not create admin profile: {}", e.getMessage());
@@ -222,4 +233,101 @@ public class AuthService {
                 .build();
     }
 
+    // ─── Create credentials (internal) ───────────────────────────────
+    public String createCredentials(String email, String password, Role role) {
+        if (repository.existsByEmail(email)) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        UserCredential user = UserCredential.builder()
+                .email(email)
+                .password(passwordEncoder.encode(password))
+                .role(role)
+                .suspended(false)
+                .build();
+
+        repository.save(user);
+        return user.getId();
+    }
+
+    // ─── Delete user (internal) ───────────────────────────────────────
+    public void deleteUser(String authId) {
+        UserCredential user = repository.findById(authId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        repository.delete(user);
+    }
+
+    // ─── Reset another user's password (internal) ────────────────────
+    public void resetUserPassword(String authId, String newPassword) {
+        UserCredential user = repository.findById(authId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPassword(passwordEncoder.encode(newPassword));
+        repository.save(user);
+    }
+
+    // ─── Change own password (internal) ──────────────────────────────
+    public void changeOwnPassword(String authId, String oldPassword, String newPassword) {
+        UserCredential user = repository.findById(authId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("Old password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        repository.save(user);
+    }
+
+    // ─── Get user ID by email (internal) ─────────────────────────────
+    public String getIdByEmail(String email) {
+        UserCredential user = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found: " + email));
+        return user.getId();
+    }
+
+    // ─── Check if email exists (internal) ────────────────────────────
+    public boolean emailExists(String email) {
+        return repository.existsByEmail(email);
+    }
+
+    // ─── Admin creates member ─────────────────────────────────────────
+    public AuthResponse createMember(CreateMemberRequest request) {
+        if (repository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        UserCredential user = UserCredential.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(Role.MEMBRE)
+                .suspended(false)
+                .build();
+        repository.save(user);
+
+        try {
+            userServiceClient.createMemberProfile(
+                    new InternalMemberRequest(
+                            user.getId(),
+                            request.getFirstName(),
+                            request.getSecondName(),
+                            request.getGender()
+                    )
+            );
+        } catch (Exception e) {
+            log.warn("Could not create member profile: {}", e.getMessage());
+        }
+
+        String token = jwtUtil.generateToken(
+                user.getId(),
+                user.getEmail(),
+                user.getRole().name()
+        );
+
+        return AuthResponse.builder()
+                .token(token)
+                .id(user.getId())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
+    }
 }

@@ -19,11 +19,21 @@ public class Coach {
     private String authId;
 
     @Column(nullable = false)
-    private String fullName;
+    private String firstName;
+
+    @Column(nullable = false)
+    private String secondName;
 
     private String phone;
+
+    private String birthDate;
+
+    private String gender;
 
     private String specialties;
 
     private String biography;
+
+    @Column
+    private String profilePic;
 }

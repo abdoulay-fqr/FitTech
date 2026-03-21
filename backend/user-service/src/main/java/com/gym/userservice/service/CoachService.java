@@ -5,6 +5,10 @@ import com.gym.userservice.model.Coach;
 import com.gym.userservice.repository.CoachRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -16,13 +20,12 @@ public class CoachService {
 
     // ─── Create coach ────────────────────────────────────────────────
     public Coach createCoach(CreateCoachRequest request) {
-        if (repository.existsByAuthId(request.getAuthId())) {
-            throw new RuntimeException("Coach already exists");
-        }
         Coach coach = Coach.builder()
-                .authId(request.getAuthId())
-                .fullName(request.getFullName())
+                .firstName(request.getFirstName())
+                .secondName(request.getSecondName())
                 .phone(request.getPhone())
+                .birthDate(request.getBirthDate())
+                .gender(request.getGender())
                 .specialties(request.getSpecialties())
                 .biography(request.getBiography())
                 .build();
@@ -30,17 +33,24 @@ public class CoachService {
     }
 
     // ─── Get all coaches ─────────────────────────────────────────────
-    public List<Coach> getAllCoaches() {
-        return repository.findAll();
+    @Transactional(readOnly = true)
+    public Page<Coach> getAllCoaches(String search, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        if (search != null && !search.isEmpty()) {
+            return repository.searchCoaches(search, pageable);
+        }
+        return repository.findAll(pageable);
     }
 
     // ─── Get coach by id ─────────────────────────────────────────────
+    @Transactional(readOnly = true)
     public Coach getCoachById(String id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Coach not found"));
     }
 
     // ─── Get coach by authId ─────────────────────────────────────────
+    @Transactional(readOnly = true)
     public Coach getCoachByAuthId(String authId) {
         return repository.findByAuthId(authId)
                 .orElseThrow(() -> new RuntimeException("Coach not found"));
@@ -49,8 +59,11 @@ public class CoachService {
     // ─── Update coach ────────────────────────────────────────────────
     public Coach updateCoach(String id, UpdateCoachRequest request) {
         Coach coach = getCoachById(id);
-        if (request.getFullName() != null) coach.setFullName(request.getFullName());
+        if (request.getFirstName() != null) coach.setFirstName(request.getFirstName());
+        if (request.getSecondName() != null) coach.setSecondName(request.getSecondName());
         if (request.getPhone() != null) coach.setPhone(request.getPhone());
+        if (request.getBirthDate() != null) coach.setBirthDate(request.getBirthDate());
+        if (request.getGender() != null) coach.setGender(request.getGender());
         if (request.getSpecialties() != null) coach.setSpecialties(request.getSpecialties());
         if (request.getBiography() != null) coach.setBiography(request.getBiography());
         return repository.save(coach);

@@ -20,6 +20,15 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 2MB
+      max-request-size: 2MB
+
+file:
+  upload-dir: uploads
+
 eureka:
   client:
     service-url:

@@ -6,9 +6,11 @@ import lombok.Data;
 public class CreateCoachRequest {
     private String email;
     private String password;
-    // ──► profile fields sent to user-service
-    private String fullName;
+    private String firstName;
+    private String secondName;
     private String phone;
+    private String birthDate;
+    private String gender;
     private String specialties;
     private String biography;
 }

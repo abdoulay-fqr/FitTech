@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.gym.userservice.service.FileStorageService;
 
 @RestController
 @RequestMapping("/users/members")
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
     private final MemberService memberService;
+
+    private final FileStorageService fileStorageService;
 
     private static final String UUID_REGEX = "/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}";
 
@@ -123,5 +127,35 @@ public class MemberController {
     public ResponseEntity<String> debugRole(Authentication authentication) {
         if (authentication == null) return ResponseEntity.ok("No authentication");
         return ResponseEntity.ok("Role: " + authentication.getAuthorities().toString());
+    }
+
+    @PostMapping("/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/pic")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<String> uploadMemberPic(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            Member member = memberService.getMemberById(id);
+            String path = fileStorageService.saveFile(file, "members", member.getId());
+            memberService.updateProfilePic(id, path);
+            return ResponseEntity.ok("Profile picture updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/me/pic")
+    public ResponseEntity<String> uploadMyPic(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            String authId = (String) authentication.getCredentials();
+            Member member = memberService.getMemberByAuthId(authId);
+            String path = fileStorageService.saveFile(file, "members", member.getId());
+            memberService.updateProfilePic(member.getId(), path);
+            return ResponseEntity.ok("Profile picture updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

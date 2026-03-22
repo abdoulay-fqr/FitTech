@@ -112,4 +112,11 @@ public class MemberService {
         return repository.findByAuthId(authId)
                 .orElseThrow(() -> new RuntimeException("Member not found"));
     }
+
+    // ─── Update profile picture ──────────────────────────────────────
+    public Member updateProfilePic(String id, String path) {
+        Member member = getMemberById(id);
+        member.setProfilePic(path);
+        return repository.save(member);
+    }
 }

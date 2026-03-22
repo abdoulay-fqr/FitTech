@@ -75,4 +75,11 @@ public class CoachService {
                 .orElseThrow(() -> new RuntimeException("Coach not found"));
         repository.deleteById(id);
     }
+
+    // ─── Update profile picture ──────────────────────────────────────
+    public Coach updateProfilePic(String id, String path) {
+        Coach coach = getCoachById(id);
+        coach.setProfilePic(path);
+        return repository.save(coach);
+    }
 }

@@ -71,4 +71,11 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
         repository.deleteById(id);
     }
+
+    // ─── Update profile picture ──────────────────────────────────────
+    public Admin updateProfilePic(String id, String path) {
+        Admin admin = getAdminById(id);
+        admin.setProfilePic(path);
+        return repository.save(admin);
+    }
 }

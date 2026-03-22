@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.gym.userservice.service.FileStorageService;
 
 @RestController
 @RequestMapping("/users/admins")
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
 
     private final AdminService adminService;
+
+    private final FileStorageService fileStorageService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
@@ -97,5 +101,35 @@ public class AdminController {
                         " | Credentials: " + authentication.getCredentials() +
                         " | Roles: " + authentication.getAuthorities()
         );
+    }
+
+    @PostMapping("/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/pic")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<String> uploadAdminPic(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            Admin admin = adminService.getAdminById(id);
+            String path = fileStorageService.saveFile(file, "admins", admin.getId());
+            adminService.updateProfilePic(id, path);
+            return ResponseEntity.ok("Profile picture updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/me/pic")
+    public ResponseEntity<String> uploadMyPic(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            String authId = (String) authentication.getCredentials();
+            Admin admin = adminService.getAdminByAuthId(authId);
+            String path = fileStorageService.saveFile(file, "admins", admin.getId());
+            adminService.updateProfilePic(admin.getId(), path);
+            return ResponseEntity.ok("Profile picture updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

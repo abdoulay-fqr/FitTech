@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/users/coaches/internal").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/admins/internal").permitAll()
                         .requestMatchers("/auth/internal/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/users/files/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

@@ -28,7 +28,8 @@ public class JwtAuthFilter implements HandlerFilterFunction<ServerResponse, Serv
             "/users/members/internal",
             "/users/coaches/internal",
             "/users/admins/internal",
-            "/auth/internal"
+            "/auth/internal",
+            "/users/files"
     );
 
     @Override

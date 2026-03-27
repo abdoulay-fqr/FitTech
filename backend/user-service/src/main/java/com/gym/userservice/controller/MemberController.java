@@ -2,6 +2,7 @@ package com.gym.userservice.controller;
 
 import com.gym.userservice.dto.*;
 import com.gym.userservice.model.Member;
+import com.gym.userservice.service.FileStorageService;
 import com.gym.userservice.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/users/members")
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
     private final MemberService memberService;
+    private final FileStorageService fileStorageService; // ← ADDED
 
     private static final String UUID_REGEX = "/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}";
 
@@ -92,6 +95,44 @@ public class MemberController {
         return ResponseEntity.ok(memberService.updateMember(id, request));
     }
 
+    @PutMapping("/me")
+    public ResponseEntity<Member> updateMyProfile(
+            Authentication authentication,
+            @RequestBody UpdateMemberRequest request) {
+        String authId = (String) authentication.getCredentials();
+        Member member = memberService.getMemberByAuthId(authId);
+        return ResponseEntity.ok(memberService.updateMember(member.getId(), request));
+    }
+
+    // ─── Profile photo — member uploads their own pic ────────────────
+    @PostMapping("/me/pic")
+    public ResponseEntity<String> uploadMyPic(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            String authId = (String) authentication.getCredentials();
+            Member member = memberService.getMemberByAuthId(authId);
+            fileStorageService.saveFile(file, "members", member.getId());
+            return ResponseEntity.ok("Photo uploaded successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // ─── Profile photo — admin uploads a member's pic ────────────────
+    @PostMapping("/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/pic")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<String> uploadMemberPic(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            fileStorageService.saveFile(file, "members", id);
+            return ResponseEntity.ok("Photo uploaded successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     // ─── NFC check (public for scanner) ─────────────────────────────
     @GetMapping("/nfc/check/{nfcCardId}")
     public ResponseEntity<Boolean> checkNfcAccess(
@@ -108,15 +149,6 @@ public class MemberController {
         memberRequest.setSecondName(request.getSecondName());
         memberRequest.setGender(request.getGender());
         return ResponseEntity.ok(memberService.createMember(memberRequest));
-    }
-
-    @PutMapping("/me")
-    public ResponseEntity<Member> updateMyProfile(
-            Authentication authentication,
-            @RequestBody UpdateMemberRequest request) {
-        String authId = (String) authentication.getCredentials();
-        Member member = memberService.getMemberByAuthId(authId);
-        return ResponseEntity.ok(memberService.updateMember(member.getId(), request));
     }
 
     @GetMapping("/debug-role")

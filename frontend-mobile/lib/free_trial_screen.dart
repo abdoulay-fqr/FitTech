@@ -25,21 +25,21 @@ class _FreeTrialScreenState extends State<FreeTrialScreen> {
 
   Future<void> _onCheck() async {
     if (_fullNameController.text.trim().isEmpty ||
-    _emailController.text.trim().isEmpty) {
-  ToastHelper.showError(context, 'Please fill in all fields');
-  return;
-}
+        _emailController.text.trim().isEmpty) {
+      ToastHelper.showError(context, 'Please fill in all fields');
+      return;
+    }
     final nameError = Validators.name(_fullNameController.text.trim(), 'Full name');
-if (nameError != null) {
-  ToastHelper.showError(context, nameError);
-  return;
-}
+    if (nameError != null) {
+      ToastHelper.showError(context, nameError);
+      return;
+    }
 
-final emailError = Validators.email(_emailController.text.trim());
-if (emailError != null) {
-  ToastHelper.showError(context, emailError);
-  return;
-}
+    final emailError = Validators.email(_emailController.text.trim());
+    if (emailError != null) {
+      ToastHelper.showError(context, emailError);
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -235,13 +235,13 @@ if (emailError != null) {
                         child: _isLoading
                             ? const CircularProgressIndicator(color: Colors.black)
                             : const Text(
-                                'Check',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
+                          'Check',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
                       ),
                     ),
 

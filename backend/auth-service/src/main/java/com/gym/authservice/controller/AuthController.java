@@ -22,6 +22,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.register(request));
     }
 
+    
     // ─── Login for everyone ──────────────────────────────────────────
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(

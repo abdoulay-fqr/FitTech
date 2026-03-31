@@ -1,5 +1,7 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import Sidebar from "../components/adminComponents/Sidebar";
+import MembersPage from "./MembersPage";
 
 export default function AdminHomePage() {
   const navigate = useNavigate();
@@ -11,15 +13,12 @@ export default function AdminHomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <h1 className="text-3xl font-bold mb-4">Welcome back, Admin 👋</h1>
-      <p className="text-gray-500 mb-8">You are logged in as ADMIN</p>
-      <button
-        onClick={handleLogout}
-        className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600"
-      >
-        Log Out
-      </button>
+    <div className="min-h-screen bg-white">
+      <Sidebar onLogout={handleLogout} />
+
+      <main className="pt-14 md:ml-[156px] md:pt-0">
+        <MembersPage />
+      </main>
     </div>
   );
 }

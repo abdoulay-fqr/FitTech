@@ -44,3 +44,19 @@ export const resetPassword = async (
   });
   return response.data;
 };
+
+// ─── Change Password ──────────────────────────────────────────────────────────
+
+export const changePassword = async (
+    oldPassword: string,
+    newPassword: string,
+    confirmPassword: string
+): Promise<string> => {
+  const response = await axiosInstance.put<string>("/auth/change-password", {
+    oldPassword,
+    newPassword,
+    confirmPassword,
+  });
+
+  return response.data;
+};

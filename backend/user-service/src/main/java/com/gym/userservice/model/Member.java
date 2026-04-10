@@ -18,6 +18,9 @@ public class Member {
     @Column(nullable = false)
     private String authId;
 
+    @Column(unique = true)
+    private String email;
+
     @Column(nullable = true)
     private String firstName;
 

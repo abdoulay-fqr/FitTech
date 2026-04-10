@@ -166,4 +166,9 @@ public class AuthController {
             @Valid @RequestBody CreateMemberRequest request) {
         return ResponseEntity.ok(authService.createMember(request));
     }
+
+    @PostMapping("/internal/test")
+    public ResponseEntity<String> testInternal() {
+        return ResponseEntity.ok("Internal endpoint reached successfully");
+    }
 }

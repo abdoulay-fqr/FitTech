@@ -11,7 +11,7 @@ const MembersTableHeader: React.FC = () => {
         <div />
         <div>First name</div>
         <div>Second name</div>
-        <div className="font-semibold text-[#f4b400]">Phone ^</div>
+        <div className="font-semibold text-[#f4b400]">Phone</div>
         <div>Gender</div>
         <div>Plan</div>
         <div />

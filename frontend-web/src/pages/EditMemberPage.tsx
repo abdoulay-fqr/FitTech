@@ -1,9 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Camera, Search } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+    ArrowLeft,
+    Bell,
+    Camera,
+    Lock,
+    Ban,
+    CheckCircle,
+} from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/adminComponents/Sidebar";
 import cover from "../assets/gym-cover.jpg";
-import fallbackAvatar from "../assets/avatar1.png";
+import fallbackAvatar from "../assets/noprofil.png";
 import { memberService } from "../services/memberService";
 import type { Member } from "../types/member";
 
@@ -11,133 +18,235 @@ type Props = {
     onLogout: () => void;
 };
 
+type EditMemberFormData = {
+    firstName: string;
+    secondName: string;
+    phone: string;
+    birthDate: string;
+    gender: "MALE" | "FEMALE";
+    objective: string;
+    medicalRestrictions: string;
+    subscriptionPlan: string;
+    subscriptionStatus: string;
+    password: string;
+    confirmPassword: string;
+    profilePic: string | null;
+};
+
 const EditMemberPage: React.FC<Props> = ({ onLogout }) => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState("");
-    const [saveError, setSaveError] = useState("");
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [suspendLoading, setSuspendLoading] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
 
-    const [formData, setFormData] = useState({
+    const [message, setMessage] = useState("");
+    const [error, setError] = useState("");
+    const [uploadError, setUploadError] = useState("");
+
+    const [formData, setFormData] = useState<EditMemberFormData>({
         firstName: "",
         secondName: "",
         phone: "",
         birthDate: "",
+        gender: "MALE",
         objective: "",
         medicalRestrictions: "",
-        nfcCardId: "",
-        nfcActive: true,
-        suspended: false,
-        gender: "MALE" as "MALE" | "FEMALE",
-        subscriptionPlan: "MONTHLY" as "MONTHLY" | "ANNUAL" | "SESSION",
-        subscriptionStatus: "ACTIVE",
-        profilePic: null as string | null,
+        subscriptionPlan: "",
+        subscriptionStatus: "",
         password: "",
         confirmPassword: "",
+        profilePic: null,
     });
 
+    const getImageSrc = (memberId: string, profilePic: string | null) => {
+        if (!profilePic) return fallbackAvatar;
+        return `http://localhost:8080/users/files/members/${memberId}`;
+    };
+
     useEffect(() => {
-        const fetchMember = async () => {
+        const fetchData = async () => {
             try {
                 if (!id) return;
 
                 setLoading(true);
                 setError("");
+
                 const data = await memberService.getMemberById(id);
                 setMember(data);
 
                 setFormData({
-                    firstName: data.firstName,
-                    secondName: data.secondName,
-                    phone: data.phone,
-                    birthDate: data.birthDate,
-                    objective: data.objective,
-                    medicalRestrictions: data.medicalRestrictions,
-                    nfcCardId: data.nfcCardId,
-                    nfcActive: data.nfcActive,
-                    suspended: data.suspended,
-                    gender: data.gender,
-                    subscriptionPlan: data.subscriptionPlan,
-                    subscriptionStatus: data.subscriptionStatus,
-                    profilePic: data.profilePic,
+                    firstName: data.firstName || "",
+                    secondName: data.secondName || "",
+                    phone: data.phone || "",
+                    birthDate: data.birthDate || "",
+                    gender: (data.gender as "MALE" | "FEMALE") || "MALE",
+                    objective: data.objective || "",
+                    medicalRestrictions: data.medicalRestrictions || "",
+                    subscriptionPlan: data.subscriptionPlan || "",
+                    subscriptionStatus: data.subscriptionStatus || "",
                     password: "",
                     confirmPassword: "",
+                    profilePic: data.profilePic || null,
                 });
-            } catch (err) {
+            } catch (err: any) {
                 console.error(err);
-                setError("Failed to load member");
+                setError(err.response?.data || err.message || "Failed to load member");
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchMember();
+        fetchData();
     }, [id]);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
-        const { name, value, type } = e.target;
-
-        if (type === "checkbox") {
-            const checked = (e.target as HTMLInputElement).checked;
-            setFormData((prev) => ({
-                ...prev,
-                [name]: checked,
-            }));
-            return;
-        }
+        const { name, value } = e.target;
 
         setFormData((prev) => ({
             ...prev,
-            [name]: value,
+            [name]: name === "gender" ? (value as "MALE" | "FEMALE") : value,
         }));
     };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!id) return;
-
         try {
+            if (!id) return;
+
             setSaving(true);
-            setSaveError("");
+            setError("");
+            setMessage("");
 
             await memberService.updateMember(id, {
                 firstName: formData.firstName,
                 secondName: formData.secondName,
                 phone: formData.phone,
                 birthDate: formData.birthDate,
+                gender: formData.gender,
                 objective: formData.objective,
                 medicalRestrictions: formData.medicalRestrictions,
-                nfcCardId: formData.nfcCardId,
-                nfcActive: formData.nfcActive,
-                suspended: formData.suspended,
-                gender: formData.gender,
-                subscriptionPlan: formData.subscriptionPlan,
-                subscriptionStatus: formData.subscriptionStatus,
-                profilePic: formData.profilePic,
+                subscriptionPlan: formData.subscriptionPlan || null,
+                subscriptionStatus: formData.subscriptionStatus || null,
             });
 
-            navigate(`/admin/members/${id}`);
-        } catch (err) {
+            const refreshed = await memberService.getMemberById(id);
+            setMember(refreshed);
+
+            setMessage("Member updated successfully");
+        } catch (err: any) {
             console.error(err);
-            setSaveError("Failed to save member changes");
+            setError(err.response?.data || err.message || "Failed to update member");
         } finally {
             setSaving(false);
         }
     };
 
-    if (loading) {
-        return <div className="p-6">Loading member...</div>;
-    }
+    const handleResetPassword = async () => {
+        try {
+            if (!member) return;
 
-    if (error || !member) {
-        return <div className="p-6 text-red-500">Member not found</div>;
-    }
+            setPasswordLoading(true);
+            setError("");
+            setMessage("");
+
+            if (!formData.password || !formData.confirmPassword) {
+                throw new Error("Please fill both password fields");
+            }
+
+            if (formData.password !== formData.confirmPassword) {
+                throw new Error("Passwords do not match");
+            }
+
+            await memberService.resetMemberPassword(
+                member.authId,
+                formData.password,
+                formData.confirmPassword
+            );
+
+            setMessage("Password changed successfully");
+
+            setFormData((prev) => ({
+                ...prev,
+                password: "",
+                confirmPassword: "",
+            }));
+        } catch (err: any) {
+            console.error(err);
+            setError(err.response?.data || err.message || "Failed to change password");
+        } finally {
+            setPasswordLoading(false);
+        }
+    };
+
+    const handleSuspendToggle = async () => {
+        try {
+            if (!member || !id) return;
+
+            setSuspendLoading(true);
+            setError("");
+            setMessage("");
+
+            if (member.suspended) {
+                await memberService.unsuspendMember(id);
+                setMessage("Member unsuspended successfully");
+            } else {
+                await memberService.suspendMember(id);
+                setMessage("Member suspended successfully");
+            }
+
+            const refreshed = await memberService.getMemberById(id);
+            setMember(refreshed);
+        } catch (err: any) {
+            console.error(err);
+            setError(err.response?.data || err.message || "Failed to update suspension");
+        } finally {
+            setSuspendLoading(false);
+        }
+    };
+
+    const handleImageUpload = async (
+        e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+        try {
+            const file = e.target.files?.[0];
+            if (!file || !id) return;
+
+            setUploadingImage(true);
+            setUploadError("");
+            setError("");
+            setMessage("");
+
+            await memberService.uploadMemberPicture(id, file);
+
+            const refreshed = await memberService.getMemberById(id);
+            setMember(refreshed);
+            setFormData((prev) => ({
+                ...prev,
+                profilePic: refreshed.profilePic || null,
+            }));
+
+            setMessage("Profile picture updated successfully");
+        } catch (err: any) {
+            console.error(err);
+            setUploadError(
+                err.response?.data || err.message || "Failed to upload image"
+            );
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
+    if (loading) return <div className="p-6">Loading...</div>;
+    if (!member) return <div className="p-6 text-red-500">Member not found</div>;
 
     return (
         <div className="min-h-screen bg-[#f5f5f5]">
@@ -145,279 +254,258 @@ const EditMemberPage: React.FC<Props> = ({ onLogout }) => {
 
             <main className="pt-14 md:ml-[156px] md:pt-0">
                 <div className="min-h-screen bg-white">
-                    <div className="flex flex-col gap-4 border-b border-[#ececec] px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
+                    <div className="flex items-center justify-between border-b px-4 py-5 md:px-7">
                         <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => navigate(`/admin/members/${member.id}`)}
-                                className="text-[#2f4053]"
-                            >
-                                <ArrowLeft size={18} strokeWidth={2.2} />
+                            <button onClick={() => navigate("/admin/home")}>
+                                <ArrowLeft size={18} />
                             </button>
                             <h1 className="text-[18px] font-semibold text-[#2f4053]">
                                 Edit Member
                             </h1>
                         </div>
 
-                        <div className="flex items-center gap-5">
-                            <div className="relative hidden md:block">
-                                <Search
-                                    size={14}
-                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Search for members"
-                                    className="h-10 w-[240px] rounded-md bg-[#f5f5f5] pl-9 pr-3 text-[12px] outline-none"
-                                />
-                            </div>
-
-                            <button className="flex items-center gap-2 text-[13px] text-[#2f4053]">
-                                <Bell size={15} />
-                                <span>Notifications</span>
-                            </button>
-                        </div>
+                        <button className="flex items-center gap-2 text-[13px] text-[#2f4053]">
+                            <Bell size={15} />
+                            Notifications
+                        </button>
                     </div>
 
-                    <div className="h-[125px] w-full overflow-hidden md:h-[150px]">
-                        <img src={cover} alt="Gym cover" className="h-full w-full object-cover" />
+                    <div className="h-[145px]">
+                        <img
+                            src={cover}
+                            alt="cover"
+                            className="h-full w-full object-cover"
+                        />
                     </div>
 
-                    <form onSubmit={handleSave} className="px-4 pb-10 md:px-8">
-                        <div className="-mt-12 mb-4 md:-mt-14">
+                    <form onSubmit={handleSave} className="px-5 pb-10 md:px-7">
+                        <div className="-mt-12 mb-5">
                             <div className="relative inline-block">
                                 <img
-                                    src={formData.profilePic || fallbackAvatar}
-                                    alt={formData.firstName}
-                                    className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-md md:h-24 md:w-24"
+                                    src={getImageSrc(member.id, formData.profilePic)}
+                                    alt={`${member.firstName} ${member.secondName}`}
+                                    onError={(e) => {
+                                        e.currentTarget.src = fallbackAvatar;
+                                    }}
+                                    className="h-24 w-24 rounded-full border-4 border-white object-cover"
                                 />
+
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    hidden
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                />
+
                                 <button
                                     type="button"
-                                    className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#f2cc0c] text-white shadow"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploadingImage}
+                                    className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#f2cc0c] text-white disabled:opacity-60"
                                 >
                                     <Camera size={16} />
                                 </button>
                             </div>
-                            <p className="mt-3 text-[12px] font-semibold text-[#f2cc0c]">
-                                Upload new picture
-                            </p>
+
+                            {uploadError && (
+                                <p className="mt-2 text-[12px] text-red-500">{uploadError}</p>
+                            )}
                         </div>
 
-                        {saveError && (
-                            <div className="mb-4 rounded-md bg-red-50 px-4 py-3 text-[13px] text-red-500">
-                                {saveError}
+                        {message && (
+                            <div className="mb-4 rounded bg-green-50 px-4 py-3 text-green-600">
+                                {message}
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+                        {error && (
+                            <div className="mb-4 rounded bg-red-50 px-4 py-3 text-red-500">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
                             <div>
                                 <h3 className="mb-4 text-[15px] font-semibold text-[#111827]">
                                     Personal Information
                                 </h3>
 
                                 <div className="space-y-3">
-                                    <div className="grid grid-cols-[130px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">First Name*</label>
-                                        <input
-                                            name="firstName"
-                                            value={formData.firstName}
-                                            onChange={handleChange}
-                                            className="h-9 rounded-[4px] border border-[#f2cc0c] px-3 text-[12px] outline-none"
-                                        />
-                                    </div>
+                                    <input
+                                        name="firstName"
+                                        value={formData.firstName}
+                                        onChange={handleChange}
+                                        placeholder="First Name"
+                                        className="h-10 w-full rounded border px-3"
+                                    />
 
-                                    <div className="grid grid-cols-[130px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">Second Name*</label>
-                                        <input
-                                            name="secondName"
-                                            value={formData.secondName}
-                                            onChange={handleChange}
-                                            className="h-9 rounded-[4px] border border-[#d9d9d9] px-3 text-[12px] outline-none"
-                                        />
-                                    </div>
+                                    <input
+                                        name="secondName"
+                                        value={formData.secondName}
+                                        onChange={handleChange}
+                                        placeholder="Second Name"
+                                        className="h-10 w-full rounded border px-3"
+                                    />
 
-                                    <div className="grid grid-cols-[130px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">Phone</label>
-                                        <input
-                                            name="phone"
-                                            value={formData.phone}
-                                            onChange={handleChange}
-                                            className="h-9 rounded-[4px] border border-[#d9d9d9] px-3 text-[12px] outline-none"
-                                        />
-                                    </div>
+                                    <input
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        placeholder="Phone"
+                                        className="h-10 w-full rounded border px-3"
+                                    />
 
-                                    <div className="grid grid-cols-[130px_1fr] items-start gap-4">
-                                        <label className="pt-2 text-[12px] text-[#111827]">Birth Date</label>
-                                        <input
-                                            name="birthDate"
-                                            value={formData.birthDate}
-                                            onChange={handleChange}
-                                            className="h-9 w-full rounded-[4px] border border-[#d9d9d9] px-3 text-[12px] outline-none"
-                                        />
-                                    </div>
+                                    <input
+                                        name="birthDate"
+                                        value={formData.birthDate}
+                                        onChange={handleChange}
+                                        placeholder="YYYY-MM-DD"
+                                        className="h-10 w-full rounded border px-3"
+                                    />
 
-                                    <div className="grid grid-cols-[130px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">Gender</label>
-                                        <div className="flex items-center gap-6 text-[12px] text-[#111827]">
-                                            <label className="flex items-center gap-2">
-                                                <input
-                                                    type="radio"
-                                                    name="gender"
-                                                    value="MALE"
-                                                    checked={formData.gender === "MALE"}
-                                                    onChange={handleChange}
-                                                    className="accent-[#f2cc0c]"
-                                                />
-                                                Man
-                                            </label>
-
-                                            <label className="flex items-center gap-2">
-                                                <input
-                                                    type="radio"
-                                                    name="gender"
-                                                    value="FEMALE"
-                                                    checked={formData.gender === "FEMALE"}
-                                                    onChange={handleChange}
-                                                />
-                                                Woman
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <h3 className="mb-4 mt-8 text-[15px] font-semibold text-[#111827]">
-                                    Health Profile
-                                </h3>
-
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-[130px_1fr] items-start gap-4">
-                                        <label className="pt-2 text-[12px] text-[#111827]">Objective</label>
-                                        <textarea
-                                            name="objective"
-                                            value={formData.objective}
-                                            onChange={handleChange}
-                                            rows={3}
-                                            className="rounded-[4px] border border-[#d9d9d9] px-3 py-2 text-[12px] outline-none"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-[130px_1fr] items-start gap-4">
-                                        <label className="pt-2 text-[12px] text-[#111827]">
-                                            Medical Restrictions
+                                    <div className="flex items-center gap-6 text-[14px]">
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="gender"
+                                                value="MALE"
+                                                checked={formData.gender === "MALE"}
+                                                onChange={handleChange}
+                                            />
+                                            Man
                                         </label>
-                                        <textarea
-                                            name="medicalRestrictions"
-                                            value={formData.medicalRestrictions}
-                                            onChange={handleChange}
-                                            rows={3}
-                                            className="rounded-[4px] border border-[#d9d9d9] px-3 py-2 text-[12px] outline-none"
-                                        />
+
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="gender"
+                                                value="FEMALE"
+                                                checked={formData.gender === "FEMALE"}
+                                                onChange={handleChange}
+                                            />
+                                            Woman
+                                        </label>
                                     </div>
+
+                                    <textarea
+                                        name="objective"
+                                        value={formData.objective}
+                                        onChange={handleChange}
+                                        placeholder="Objective"
+                                        className="w-full rounded border px-3 py-2"
+                                        rows={3}
+                                    />
+
+                                    <textarea
+                                        name="medicalRestrictions"
+                                        value={formData.medicalRestrictions}
+                                        onChange={handleChange}
+                                        placeholder="Medical Restrictions"
+                                        className="w-full rounded border px-3 py-2"
+                                        rows={3}
+                                    />
                                 </div>
                             </div>
 
                             <div>
-                                <h3 className="mb-4 text-[15px] font-semibold text-[#111827]">
+                                <h3 className="mb-3 text-[15px] font-semibold text-[#111827]">
                                     Membership
                                 </h3>
 
                                 <div className="space-y-3">
-                                    <div className="grid grid-cols-[110px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">Plan</label>
-                                        <select
-                                            name="subscriptionPlan"
-                                            value={formData.subscriptionPlan}
-                                            onChange={handleChange}
-                                            className="h-9 rounded-[4px] border border-[#cfcfcf] bg-white px-3 text-[12px] outline-none"
-                                        >
-                                            <option value="MONTHLY">MONTHLY</option>
-                                            <option value="ANNUAL">ANNUAL</option>
-                                            <option value="SESSION">SESSION</option>
-                                        </select>
+                                    <select
+                                        name="subscriptionPlan"
+                                        value={formData.subscriptionPlan}
+                                        onChange={handleChange}
+                                        className="h-10 w-full rounded border px-3"
+                                    >
+                                        <option value="">Select plan</option>
+                                        <option value="MONTHLY">MONTHLY</option>
+                                        <option value="ANNUAL">ANNUAL</option>
+                                        <option value="SESSION">SESSION</option>
+                                    </select>
+
+                                    <select
+                                        name="subscriptionStatus"
+                                        value={formData.subscriptionStatus}
+                                        onChange={handleChange}
+                                        className="h-10 w-full rounded border px-3"
+                                    >
+                                        <option value="">Select status</option>
+                                        <option value="ACTIVE">ACTIVE</option>
+                                        <option value="EXPIRED">EXPIRED</option>
+                                    </select>
+
+                                    <div className="flex justify-between rounded border px-3 py-2 text-[13px] text-[#374151]">
+                                        <span>NFC Card</span>
+                                        <span>{member.nfcCardId || "-"}</span>
                                     </div>
 
-                                    <div className="grid grid-cols-[110px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">Status</label>
-                                        <select
-                                            name="subscriptionStatus"
-                                            value={formData.subscriptionStatus}
-                                            onChange={handleChange}
-                                            className="h-9 rounded-[4px] border border-[#cfcfcf] bg-white px-3 text-[12px] outline-none"
-                                        >
-                                            <option value="ACTIVE">ACTIVE</option>
-                                            <option value="EXPIRED">EXPIRED</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="grid grid-cols-[110px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">NFC Card ID</label>
-                                        <input
-                                            name="nfcCardId"
-                                            value={formData.nfcCardId}
-                                            onChange={handleChange}
-                                            className="h-9 rounded-[4px] border border-[#d9d9d9] px-3 text-[12px] outline-none"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-[110px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">NFC Active</label>
-                                        <input
-                                            type="checkbox"
-                                            name="nfcActive"
-                                            checked={formData.nfcActive}
-                                            onChange={handleChange}
-                                            className="h-4 w-4 accent-[#f2cc0c]"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-[110px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">Suspended</label>
-                                        <input
-                                            type="checkbox"
-                                            name="suspended"
-                                            checked={formData.suspended}
-                                            onChange={handleChange}
-                                            className="h-4 w-4 accent-[#f2cc0c]"
-                                        />
+                                    <div className="flex justify-between rounded border px-3 py-2 text-[13px] text-[#374151]">
+                                        <span>NFC Active</span>
+                                        <span>{member.nfcActive ? "Yes" : "No"}</span>
                                     </div>
                                 </div>
 
-                                <h3 className="mb-4 mt-10 text-[15px] font-semibold text-[#111827]">
+                                <h3 className="mb-3 mt-8 text-[15px] font-semibold text-[#111827]">
                                     Security
                                 </h3>
 
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">Password</label>
-                                        <input
-                                            type="password"
-                                            name="password"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            placeholder="New Password"
-                                            className="h-9 rounded-[4px] border border-[#d9d9d9] px-3 text-[12px] outline-none"
-                                        />
-                                    </div>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    placeholder="New password"
+                                    className="mb-3 h-10 w-full rounded border px-3"
+                                />
 
-                                    <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                                        <label className="text-[12px] text-[#111827]">
-                                            Confirm Password
-                                        </label>
-                                        <input
-                                            type="password"
-                                            name="confirmPassword"
-                                            value={formData.confirmPassword}
-                                            onChange={handleChange}
-                                            placeholder="Confirm Password"
-                                            className="h-9 rounded-[4px] border border-[#d9d9d9] px-3 text-[12px] outline-none"
-                                        />
-                                    </div>
-                                </div>
+                                <input
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    placeholder="Confirm password"
+                                    className="mb-4 h-10 w-full rounded border px-3"
+                                />
 
-                                <div className="mt-14 flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={handleResetPassword}
+                                    disabled={passwordLoading}
+                                    className="mb-6 flex w-full items-center justify-center gap-2 rounded bg-[#111827] px-4 py-2 text-white"
+                                >
+                                    <Lock size={16} />
+                                    {passwordLoading ? "Saving..." : "Reset Password"}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleSuspendToggle}
+                                    disabled={suspendLoading}
+                                    className={`flex w-full items-center justify-center gap-2 rounded px-4 py-2 text-white ${
+                                        member.suspended ? "bg-green-600" : "bg-red-500"
+                                    }`}
+                                >
+                                    {member.suspended ? (
+                                        <>
+                                            <CheckCircle size={16} />
+                                            {suspendLoading ? "Loading..." : "Unsuspend Member"}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Ban size={16} />
+                                            {suspendLoading ? "Loading..." : "Suspend Member"}
+                                        </>
+                                    )}
+                                </button>
+
+                                <div className="mt-10 flex justify-end">
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="rounded-md bg-[#f2cc0c] px-6 py-2.5 text-[14px] font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+                                        className="rounded bg-[#f2cc0c] px-6 py-2 text-white"
                                     >
                                         {saving ? "Saving..." : "Save Changes"}
                                     </button>

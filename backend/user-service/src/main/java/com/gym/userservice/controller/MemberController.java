@@ -107,11 +107,7 @@ public class MemberController {
     @PostMapping("/internal")
     public ResponseEntity<Member> createMemberInternal(
             @RequestBody InternalMemberRequest request) {
-        CreateMemberRequest memberRequest = new CreateMemberRequest();
-        memberRequest.setFirstName(request.getFirstName());
-        memberRequest.setSecondName(request.getSecondName());
-        memberRequest.setGender(request.getGender());
-        return ResponseEntity.ok(memberService.createMember(memberRequest));
+        return ResponseEntity.ok(memberService.createMemberInternal(request));
     }
 
     @PutMapping("/me")

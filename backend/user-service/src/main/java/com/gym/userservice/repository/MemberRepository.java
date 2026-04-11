@@ -22,6 +22,8 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     // ── Search by firstName, secondName ───────────────────
     @Query("SELECT m FROM Member m WHERE " +
             "LOWER(m.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(m.secondName) LIKE LOWER(CONCAT('%', :search, '%'))")
+            "LOWER(m.secondName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(CONCAT(m.firstName, ' ', m.secondName)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(m.email) LIKE LOWER(CONCAT('%', :search, '%'))")
     Page<Member> searchMembers(@Param("search") String search, Pageable pageable);
 }

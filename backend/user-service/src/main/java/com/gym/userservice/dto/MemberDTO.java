@@ -6,6 +6,7 @@ import lombok.Data;
 public class MemberDTO {
     private String id;
     private String authId;
+    private String email;
     private String firstName;
     private String secondName;
     private String phone;

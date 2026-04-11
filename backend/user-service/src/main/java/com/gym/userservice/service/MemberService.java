@@ -1,5 +1,7 @@
 package com.gym.userservice.service;
 
+import com.gym.userservice.config.AuthServiceClient;
+import com.gym.userservice.config.InternalAuthRequest;
 import com.gym.userservice.dto.*;
 import com.gym.userservice.model.Member;
 import com.gym.userservice.repository.MemberRepository;
@@ -9,17 +11,22 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class MemberService {
 
     private final MemberRepository repository;
+    private final AuthServiceClient authServiceClient;
 
     // ─── Create member ───────────────────────────────────────────────
     public Member createMember(CreateMemberRequest request) {
+        String authId = authServiceClient.createMemberCredentials(
+                new InternalAuthRequest(request.getEmail(), request.getPassword(), "MEMBRE")
+        );
         Member member = Member.builder()
+                .authId(authId)
+                .email(request.getEmail())  // 👈 add this
                 .firstName(request.getFirstName())
                 .secondName(request.getSecondName())
                 .phone(request.getPhone())
@@ -27,6 +34,21 @@ public class MemberService {
                 .gender(request.getGender())
                 .objective(request.getObjective())
                 .medicalRestrictions(request.getMedicalRestrictions())
+                .nfcActive(false)
+                .suspended(false)
+                .build();
+        return repository.save(member);
+    }
+
+    public Member createMemberInternal(InternalMemberRequest request) {
+        if (repository.existsByAuthId(request.getAuthId())) {
+            throw new RuntimeException("Member already exists");
+        }
+        Member member = Member.builder()
+                .authId(request.getAuthId())
+                .firstName(request.getFirstName())
+                .secondName(request.getSecondName())
+                .gender(request.getGender())
                 .nfcActive(false)
                 .suspended(false)
                 .build();
@@ -65,8 +87,9 @@ public class MemberService {
 
     // ─── Delete member ───────────────────────────────────────────────
     public void deleteMember(String id) {
-        repository.findById(id)
+        Member member = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Member not found"));
+        authServiceClient.deleteUserCredentials(member.getAuthId());
         repository.deleteById(id);
     }
 

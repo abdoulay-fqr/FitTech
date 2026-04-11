@@ -2,7 +2,7 @@ import React from "react";
 import { CircleAlert, SquarePen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Member } from "../../../types/member";
-import fallbackAvatar from "../../../assets/avatar1.png";
+import fallbackAvatar from "../../../assets/noprofil.png";
 
 type MemberRowProps = {
   member: Member;
@@ -11,10 +11,10 @@ type MemberRowProps = {
 const MemberRow: React.FC<MemberRowProps> = ({ member }) => {
   const navigate = useNavigate();
 
-  const planClass =
-      member.subscriptionStatus === "EXPIRED"
-          ? "text-[#ff2b2b] font-semibold"
-          : "text-[#3d4654]";
+  const getProfileImageSrc = () => {
+    if (!member.profilePic) return fallbackAvatar;
+    return `http://localhost:8080/users/files/members/${member.id}`;
+  };
 
   return (
       <div
@@ -25,8 +25,11 @@ const MemberRow: React.FC<MemberRowProps> = ({ member }) => {
       >
         <div className="mr-2 flex items-center">
           <img
-              src={member.profilePic || fallbackAvatar}
-              alt={member.firstName}
+              src={getProfileImageSrc()}
+              alt={`${member.firstName} ${member.secondName}`}
+              onError={(e) => {
+                e.currentTarget.src = fallbackAvatar;
+              }}
               className="h-6 w-6 rounded-full object-cover shadow-[0_2px_8px_rgba(0,0,0,0.18)] sm:h-7 sm:w-7 lg:h-8 lg:w-8"
           />
         </div>
@@ -35,7 +38,7 @@ const MemberRow: React.FC<MemberRowProps> = ({ member }) => {
         <div>{member.secondName}</div>
         <div>{member.phone}</div>
         <div>{member.gender === "MALE" ? "Man" : "Woman"}</div>
-        <div className={planClass}>{member.subscriptionPlan}</div>
+        <div>{member.subscriptionPlan || "-"}</div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-2">
           <button

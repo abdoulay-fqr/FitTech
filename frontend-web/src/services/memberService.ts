@@ -1,90 +1,94 @@
-import type { Member, MembersResponse } from "../types/member";
+import axiosInstance from "../api/axiosInstance";
+import type {
+    Member,
+    MembersResponse,
+    UpdateMemberPayload,
+} from "../types/member";
 
-const API_BASE_URL = "http://localhost:8080";
+export type CreateMemberAuthPayload = {
+    firstName: string;
+    secondName: string;
+    email: string;
+    password: string;
+    phone: string;
+    birthDate: string;
+    gender: "MALE" | "FEMALE";
+    objective: string;
+    medicalRestrictions: string;
+};
 
 export const memberService = {
-  async getAllMembers(): Promise<Member[]> {
-    const token = localStorage.getItem("token");
+    async getAllMembers(): Promise<Member[]> {
+        const response = await axiosInstance.get<MembersResponse>("/users/members");
+        return response.data.content;
+    },
 
-    if (!token) {
-      throw new Error("Token not found");
-    }
+    async getMemberById(id: string): Promise<Member> {
+        const response = await axiosInstance.get<Member>(`/users/members/${id}`);
+        return response.data;
+    },
 
-    const response = await fetch(`${API_BASE_URL}/users/members`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    async createMember(payload: CreateMemberAuthPayload): Promise<any> {
+        const response = await axiosInstance.post("/auth/member", payload);
+        return response.data;
+    },
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch members: ${response.status}`);
-    }
 
-    const data: MembersResponse = await response.json();
-    return data.content;
-  },
 
-  async getMemberById(id: string): Promise<Member> {
-    const token = localStorage.getItem("token");
+    async uploadMemberPicture(id: string, file: File): Promise<string> {
+        const formData = new FormData();
+        formData.append("file", file);
 
-    if (!token) {
-      throw new Error("Token not found");
-    }
+        const response = await axiosInstance.post<string>(
+            `/users/members/${id}/pic`,
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
 
-    const response = await fetch(`${API_BASE_URL}/users/members/${id}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+        return response.data;
+    },
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch member ${id}`);
-    }
 
-    return response.json();
-  },
+    async updateMember(id: string, payload: UpdateMemberPayload): Promise<Member> {
+        const response = await axiosInstance.put<Member>(
+            `/users/members/${id}`,
+            payload
+        );
+        return response.data;
+    },
 
-  async updateMember(
-      id: string,
-      payload: {
-        firstName: string;
-        secondName: string;
-        phone: string;
-        birthDate: string;
-        objective: string;
-        medicalRestrictions: string;
-        nfcCardId: string;
-        nfcActive: boolean;
-        suspended: boolean;
-        gender: "MALE" | "FEMALE";
-        subscriptionPlan: "MONTHLY" | "ANNUAL" | "SESSION";
-        subscriptionStatus: string;
-        profilePic: string | null;
-      }
-  ): Promise<Member> {
-    const token = localStorage.getItem("token");
 
-    if (!token) {
-      throw new Error("Token not found");
-    }
+    async resetMemberPassword(
+        authId: string,
+        newPassword: string,
+        confirmPassword: string
+    ) {
+        const response = await axiosInstance.put(
+            `/auth/admin/reset-password/${authId}`,
+            {
+                newPassword,
+                confirmPassword,
+            }
+        );
 
-    const response = await fetch(`${API_BASE_URL}/users/members/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+        return response.data;
+    },
 
-    if (!response.ok) {
-      throw new Error(`Failed to update member: ${response.status}`);
-    }
+    async suspendMember(memberId: string) {
+        const response = await axiosInstance.put(
+            `/users/members/suspend/${memberId}`
+        );
+        return response.data;
+    },
 
-    return response.json();
-  },
+    async unsuspendMember(memberId: string) {
+        const response = await axiosInstance.put(
+            `/users/members/unsuspend/${memberId}`
+        );
+        return response.data;
+    },
 };

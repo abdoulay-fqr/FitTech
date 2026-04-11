@@ -3,7 +3,7 @@ import { ArrowLeft, Bell, Search } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/adminComponents/Sidebar";
 import cover from "../assets/gym-cover.jpg";
-import fallbackAvatar from "../assets/avatar1.png";
+import fallbackAvatar from "../assets/noprofil.png";
 import { memberService } from "../services/memberService";
 import type { Member } from "../types/member";
 
@@ -19,17 +19,22 @@ const MemberDetailsPage: React.FC<Props> = ({ onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const getProfileImageSrc = (memberId: string, profilePic: string | null) => {
+    if (!profilePic) return fallbackAvatar;
+    return `http://localhost:8080/users/files/members/${memberId}`;
+  };
+
   useEffect(() => {
     const fetchMember = async () => {
       try {
         if (!id) return;
-
         setLoading(true);
+        setError("");
         const data = await memberService.getMemberById(id);
         setMember(data);
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        setError("Failed to load member");
+        setError(err.response?.data || err.message || "Failed to load member");
       } finally {
         setLoading(false);
       }
@@ -38,13 +43,8 @@ const MemberDetailsPage: React.FC<Props> = ({ onLogout }) => {
     fetchMember();
   }, [id]);
 
-  if (loading) {
-    return <div className="p-6">Loading member...</div>;
-  }
-
-  if (error || !member) {
-    return <div className="p-6 text-red-500">Member not found</div>;
-  }
+  if (loading) return <div className="p-6">Loading member...</div>;
+  if (error || !member) return <div className="p-6 text-red-500">Member not found</div>;
 
   return (
       <div className="min-h-screen bg-[#f5f5f5]">
@@ -52,7 +52,6 @@ const MemberDetailsPage: React.FC<Props> = ({ onLogout }) => {
 
         <main className="pt-14 md:ml-[156px] md:pt-0">
           <div className="min-h-screen bg-white">
-            {/* HEADER */}
             <div className="flex flex-col gap-4 border-b border-[#ececec] px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
               <div className="flex items-center gap-3">
                 <button
@@ -72,7 +71,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onLogout }) => {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
                   <input
                       type="text"
-                      placeholder="Search"
+                      placeholder="Search for members"
                       className="h-10 w-[240px] rounded-md bg-[#f5f5f5] pl-9 pr-3 text-[12px]"
                   />
                 </div>
@@ -84,27 +83,27 @@ const MemberDetailsPage: React.FC<Props> = ({ onLogout }) => {
               </div>
             </div>
 
-            {/* COVER */}
             <div className="h-[130px] w-full overflow-hidden">
-              <img src={cover} className="h-full w-full object-cover" />
+              <img src={cover} alt="Gym cover" className="h-full w-full object-cover" />
             </div>
 
             <div className="px-6 pb-10">
-              {/* AVATAR */}
               <div className="-mt-12 mb-6">
                 <img
-                    src={member.profilePic || fallbackAvatar}
+                    src={getProfileImageSrc(member.id, member.profilePic)}
+                    alt={`${member.firstName} ${member.secondName}`}
+                    onError={(e) => {
+                      e.currentTarget.src = fallbackAvatar;
+                    }}
                     className="h-24 w-24 rounded-full border-4 border-white object-cover shadow"
                 />
               </div>
 
-              {/* NAME */}
-              <h2 className="mb-6 text-[22px] font-bold">
+              <h2 className="mb-6 text-[22px] font-bold text-[#2f4053]">
                 {member.firstName} {member.secondName}
               </h2>
 
               <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-                {/* LEFT */}
                 <div>
                   <h3 className="mb-4 font-semibold">Personal Information</h3>
 
@@ -121,9 +120,7 @@ const MemberDetailsPage: React.FC<Props> = ({ onLogout }) => {
 
                     <div className="grid grid-cols-[140px_1fr]">
                       <span>Gender</span>
-                      <span>
-                      {member.gender === "MALE" ? "Man" : "Woman"}
-                    </span>
+                      <span>{member.gender === "MALE" ? "Man" : "Woman"}</span>
                     </div>
                   </div>
 
@@ -142,24 +139,23 @@ const MemberDetailsPage: React.FC<Props> = ({ onLogout }) => {
                   </div>
                 </div>
 
-                {/* RIGHT */}
                 <div>
                   <h3 className="mb-4 font-semibold">Membership</h3>
 
                   <div className="space-y-2 text-[13px]">
                     <div className="grid grid-cols-[140px_1fr]">
                       <span>Plan</span>
-                      <span>{member.subscriptionPlan}</span>
+                      <span>{member.subscriptionPlan || "-"}</span>
                     </div>
 
                     <div className="grid grid-cols-[140px_1fr]">
                       <span>Status</span>
-                      <span>{member.subscriptionStatus}</span>
+                      <span>{member.subscriptionStatus || "-"}</span>
                     </div>
 
                     <div className="grid grid-cols-[140px_1fr]">
                       <span>NFC Card</span>
-                      <span>{member.nfcCardId}</span>
+                      <span>{member.nfcCardId || "-"}</span>
                     </div>
 
                     <div className="grid grid-cols-[140px_1fr]">

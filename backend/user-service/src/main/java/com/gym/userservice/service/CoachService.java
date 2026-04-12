@@ -1,5 +1,7 @@
 package com.gym.userservice.service;
 
+import com.gym.userservice.config.AuthServiceClient;
+import com.gym.userservice.config.InternalAuthRequest;
 import com.gym.userservice.dto.*;
 import com.gym.userservice.model.Coach;
 import com.gym.userservice.repository.CoachRepository;
@@ -10,17 +12,28 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class CoachService {
 
     private final CoachRepository repository;
+    private final AuthServiceClient authServiceClient;
 
     // ─── Create coach ────────────────────────────────────────────────
     public Coach createCoach(CreateCoachRequest request) {
+        // ──► Check if email already exists
+        if (authServiceClient.emailExists(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        // ──► Create credentials in auth-service
+        String authId = authServiceClient.createCoachCredentials(
+                new InternalAuthRequest(request.getEmail(), request.getPassword(), "COACH")
+        );
+
+        // ──► Create profile in user-service
         Coach coach = Coach.builder()
+                .authId(authId)
                 .firstName(request.getFirstName())
                 .secondName(request.getSecondName())
                 .phone(request.getPhone())
@@ -71,8 +84,10 @@ public class CoachService {
 
     // ─── Delete coach ────────────────────────────────────────────────
     public void deleteCoach(String id) {
-        repository.findById(id)
+        Coach coach = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Coach not found"));
+        // ──► Delete credentials from auth-service
+        authServiceClient.deleteUserCredentials(coach.getAuthId());
         repository.deleteById(id);
     }
 

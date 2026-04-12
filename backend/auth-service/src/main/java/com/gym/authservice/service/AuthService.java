@@ -289,45 +289,4 @@ public class AuthService {
     public boolean emailExists(String email) {
         return repository.existsByEmail(email);
     }
-
-    // ─── Admin creates member ─────────────────────────────────────────
-    public AuthResponse createMember(CreateMemberRequest request) {
-        if (repository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
-        }
-
-        UserCredential user = UserCredential.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.MEMBRE)
-                .suspended(false)
-                .build();
-        repository.save(user);
-
-        try {
-            userServiceClient.createMemberProfile(
-                    new InternalMemberRequest(
-                            user.getId(),
-                            request.getFirstName(),
-                            request.getSecondName(),
-                            request.getGender()
-                    )
-            );
-        } catch (Exception e) {
-            log.warn("Could not create member profile: {}", e.getMessage());
-        }
-
-        String token = jwtUtil.generateToken(
-                user.getId(),
-                user.getEmail(),
-                user.getRole().name()
-        );
-
-        return AuthResponse.builder()
-                .token(token)
-                .id(user.getId())
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .build();
-    }
 }

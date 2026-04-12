@@ -24,6 +24,9 @@ public class Admin {
     @Column(nullable = false)
     private String secondName;
 
+    @Column(unique = true)
+    private String email;
+
     private String phone;
 
     private String birthDate;

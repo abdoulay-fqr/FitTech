@@ -67,13 +67,6 @@ public class AuthController {
         return ResponseEntity.ok("Reset email sent successfully");
     }
 
-    // ─── Create admin ────────────────────────────────────────────────
-    @PostMapping("/admin")
-    public ResponseEntity<AuthResponse> createAdmin(
-            @RequestBody CreateAdminRequest request) {
-        return ResponseEntity.ok(authService.createAdmin(request));
-    }
-
     // ─── Reset password ──────────────────────────────────────────────
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(

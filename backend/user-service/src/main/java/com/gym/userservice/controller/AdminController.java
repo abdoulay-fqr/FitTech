@@ -80,11 +80,7 @@ public class AdminController {
     @PostMapping("/internal")
     public ResponseEntity<Admin> createAdminInternal(
             @RequestBody InternalAdminRequest request) {
-        CreateAdminRequest adminRequest = new CreateAdminRequest();
-        adminRequest.setFirstName(request.getFirstName());
-        adminRequest.setSecondName(request.getSecondName());
-        adminRequest.setPhone(request.getPhone());
-        return ResponseEntity.ok(adminService.createAdmin(adminRequest));
+        return ResponseEntity.ok(adminService.createAdminInternal(request));
     }
 
     @GetMapping("/debug")

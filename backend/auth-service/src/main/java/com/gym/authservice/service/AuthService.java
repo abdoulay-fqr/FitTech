@@ -195,44 +195,6 @@ public class AuthService {
         repository.save(user);
     }
 
-    // ─── Create admin ────────────────────────────────────────────────
-    public AuthResponse createAdmin(CreateAdminRequest request) {
-        if (repository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
-        }
-
-        UserCredential user = UserCredential.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.ADMIN)
-                .suspended(false)
-                .build();
-        repository.save(user);
-
-        try {
-            userServiceClient.createAdminProfile(
-                    new InternalAdminRequest(
-                            user.getId(),
-                            request.getFirstName(),
-                            request.getSecondName(),
-                            request.getPhone(),
-                            request.getBirthDate(),
-                            request.getGender()
-                    )
-            );
-        } catch (Exception e) {
-            log.warn("Could not create admin profile: {}", e.getMessage());
-        }
-
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
-        return AuthResponse.builder()
-                .token(token)
-                .id(user.getId())
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .build();
-    }
-
     // ─── Create credentials (internal) ───────────────────────────────
     public String createCredentials(String email, String password, Role role) {
         if (repository.existsByEmail(email)) {

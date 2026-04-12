@@ -21,12 +21,20 @@ public class MemberService {
 
     // ─── Create member ───────────────────────────────────────────────
     public Member createMember(CreateMemberRequest request) {
+        // ──► Step 1: Create credentials in auth-service → get authId
         String authId = authServiceClient.createMemberCredentials(
                 new InternalAuthRequest(request.getEmail(), request.getPassword(), "MEMBRE")
         );
+
+        // ──► Step 2: Check if member already exists
+        if (repository.existsByAuthId(authId)) {
+            throw new RuntimeException("Member already exists");
+        }
+
+        // ──► Step 3: Create full profile
         Member member = Member.builder()
                 .authId(authId)
-                .email(request.getEmail())  // 👈 add this
+                .email(request.getEmail())
                 .firstName(request.getFirstName())
                 .secondName(request.getSecondName())
                 .phone(request.getPhone())
@@ -37,6 +45,7 @@ public class MemberService {
                 .nfcActive(false)
                 .suspended(false)
                 .build();
+
         return repository.save(member);
     }
 

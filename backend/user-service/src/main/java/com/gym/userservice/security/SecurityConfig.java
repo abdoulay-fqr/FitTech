@@ -46,6 +46,8 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> null;
+        return username -> new org.springframework.security.core.userdetails.User(
+                username, "", java.util.Collections.emptyList()
+        );
     }
 }

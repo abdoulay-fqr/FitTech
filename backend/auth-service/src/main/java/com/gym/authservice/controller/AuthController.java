@@ -160,13 +160,6 @@ public class AuthController {
         return ResponseEntity.ok("Password reset successfully");
     }
 
-    // ─── Admin creates member ─────────────────────────────────────────
-    @PostMapping("/member")
-    public ResponseEntity<AuthResponse> createMember(
-            @Valid @RequestBody CreateMemberRequest request) {
-        return ResponseEntity.ok(authService.createMember(request));
-    }
-
     @PostMapping("/internal/test")
     public ResponseEntity<String> testInternal() {
         return ResponseEntity.ok("Internal endpoint reached successfully");

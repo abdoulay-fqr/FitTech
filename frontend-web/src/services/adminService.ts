@@ -1,27 +1,10 @@
-import type { AdminProfile } from "../types/admin";
-
-const API_BASE_URL = "http://localhost:8080";
+import axiosInstance from "../api/axiosInstance";
+import type { AdminProfile, AdminsResponse, CreateAdminPayload } from "../types/admin";
 
 export const adminService = {
     async getMyProfile(): Promise<AdminProfile> {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            throw new Error("Token not found");
-        }
-
-        const response = await fetch(`${API_BASE_URL}/users/admins/me`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch admin profile: ${response.status}`);
-        }
-
-        return response.json();
+        const response = await axiosInstance.get<AdminProfile>("/users/admins/me");
+        return response.data;
     },
 
     async updateMyProfile(payload: {
@@ -32,50 +15,86 @@ export const adminService = {
         gender: "MALE" | "FEMALE";
         profilePic: string | null;
     }): Promise<AdminProfile> {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            throw new Error("Token not found");
-        }
-
-        const response = await fetch(`${API_BASE_URL}/users/admins/me`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to update admin profile: ${response.status}`);
-        }
-
-        return response.json();
+        const response = await axiosInstance.put<AdminProfile>(
+            "/users/admins/me",
+            payload
+        );
+        return response.data;
     },
 
     async uploadMyProfilePicture(file: File): Promise<string> {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            throw new Error("Token not found");
-        }
-
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch(`${API_BASE_URL}/users/admins/me/pic`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            body: formData,
-        });
+        const response = await axiosInstance.post<string>(
+            "/users/admins/me/pic",
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
 
-        if (!response.ok) {
-            throw new Error(`Failed to upload profile picture: ${response.status}`);
+        return response.data;
+    },
+
+    async getAllAdmins() {
+        let page = 0;
+        let hasMore = true;
+        const allAdmins: AdminProfile[] = [];
+
+        while (hasMore) {
+            const response = await axiosInstance.get<AdminsResponse>(
+                `/users/admins?page=${page}&size=10`
+            );
+
+            allAdmins.push(...response.data.content);
+            hasMore = response.data.hasMore;
+            page += 1;
         }
 
-        return response.text();
+        return allAdmins;
     },
+
+    async getAdminById(id: string): Promise<AdminProfile> {
+        const response = await axiosInstance.get<AdminProfile>(`/users/admins/${id}`);
+        return response.data;
+    },
+
+    async createAdmin(payload: CreateAdminPayload) {
+        const response = await axiosInstance.post("/users/admins", payload);
+        return response.data;
+    },
+
+    async updateAdminById(
+        id: string,
+        payload: {
+            firstName: string;
+            secondName: string;
+            phone: string;
+            birthDate: string;
+            gender: "MALE" | "FEMALE";
+        }
+    ): Promise<AdminProfile> {
+        const response = await axiosInstance.put<AdminProfile>(`/users/admins/${id}`, payload);
+        return response.data;
+    },
+
+    async uploadAdminPicture(id: string, file: File): Promise<string> {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await axiosInstance.post<string>(
+            `/users/admins/${id}/pic`,
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
+
+        return response.data;
+    }
 };

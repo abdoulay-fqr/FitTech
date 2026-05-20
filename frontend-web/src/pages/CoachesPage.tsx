@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Bell, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import CoachesTable from "../components/adminComponents/coaches/CoachesTable";
 import { coachService } from "../services/coachService";
 import type { Coach } from "../types/coach";
 
 const CoachesPage: React.FC = () => {
+    const navigate = useNavigate();
     const [coaches, setCoaches] = useState<Coach[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -13,12 +15,10 @@ const CoachesPage: React.FC = () => {
         const fetchCoaches = async () => {
             try {
                 setLoading(true);
-                setError("");
                 const data = await coachService.getAllCoaches();
                 setCoaches(data);
-            } catch (err) {
-                console.error(err);
-                setError(err instanceof Error ? err.message : "Error while loading coaches");
+            } catch (err: any) {
+                setError(err.response?.data || err.message || "Failed to load coaches");
             } finally {
                 setLoading(false);
             }
@@ -58,13 +58,16 @@ const CoachesPage: React.FC = () => {
             </div>
 
             <div className="mb-4 flex justify-end">
-                <button className="rounded-md bg-[#f2cc0c] px-5 py-2.5 text-[14px] font-semibold text-white transition hover:opacity-90">
+                <button
+                    onClick={() => navigate("/admin/coaches/new")}
+                    className="rounded-md bg-[#f2cc0c] px-5 py-2.5 text-[14px] font-semibold text-white transition hover:opacity-90"
+                >
                     Add New Coach
                 </button>
             </div>
 
-            {loading && <p className="text-[14px] text-[#374151]">Loading coaches...</p>}
-            {error && <p className="text-[14px] text-red-500">{error}</p>}
+            {loading && <p>Loading coaches...</p>}
+            {error && <p className="text-red-500">{error}</p>}
             {!loading && !error && <CoachesTable coaches={coaches} />}
         </section>
     );

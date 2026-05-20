@@ -56,6 +56,8 @@ export default function LoginPage() {
       navigate("/admin/home");
     } else if (data.role === "COACH") {
       navigate("/coach/home");
+    } else if (data.role === "SUPER_ADMIN") {
+      navigate("/super-admin/settings");
     } else {
       setErrors({ email: "", password: "Invalid email or password." });
     }

@@ -1,85 +1,79 @@
-import type { Coach, CoachesResponse } from "../types/coach";
-
-const API_BASE_URL = "http://localhost:8080";
+import axiosInstance from "../api/axiosInstance";
+import type {
+    Coach,
+    CoachesResponse,
+    UpdateCoachPayload,
+    CreateCoachAuthPayload,
+    CoachClass,
+    CoachClassesResponse,
+    CreateCoachClassPayload,
+} from "../types/coach";
 
 export const coachService = {
     async getAllCoaches(): Promise<Coach[]> {
-        const token = localStorage.getItem("token");
+        let page = 0;
+        let hasMore = true;
+        const allCoaches: Coach[] = [];
 
-        if (!token) {
-            throw new Error("Token not found");
+        while (hasMore) {
+            const response = await axiosInstance.get<CoachesResponse>(
+                `/users/coaches?page=${page}&size=10`
+            );
+
+            allCoaches.push(...response.data.content);
+            hasMore = response.data.hasMore;
+            page += 1;
         }
 
-        const response = await fetch(`${API_BASE_URL}/users/coaches`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch coaches: ${response.status}`);
-        }
-
-        const data: CoachesResponse = await response.json();
-        return data.content;
+        return allCoaches;
     },
 
     async getCoachById(id: string): Promise<Coach> {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            throw new Error("Token not found");
-        }
-
-        const response = await fetch(`${API_BASE_URL}/users/coaches/${id}`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch coach: ${response.status}`);
-        }
-
-        return response.json();
+        const response = await axiosInstance.get<Coach>(`/users/coaches/${id}`);
+        return response.data;
     },
 
-    async updateCoach(
-        id: string,
-        payload: {
-            firstName: string;
-            secondName: string;
-            phone: string;
-            birthDate: string;
-            gender: "MALE" | "FEMALE";
-            specialties: string;
-            biography: string;
-            profilePic: string | null;
-        }
-    ): Promise<Coach> {
-        const token = localStorage.getItem("token");
+    async createCoach(payload: CreateCoachAuthPayload) {
+        const response = await axiosInstance.post("/users/coaches", payload);
+        return response.data;
+    },
 
-        if (!token) {
-            throw new Error("Token not found");
-        }
+    async updateCoach(id: string, payload: UpdateCoachPayload): Promise<Coach> {
+        const response = await axiosInstance.put<Coach>(`/users/coaches/${id}`, payload);
+        return response.data;
+    },
 
-        const response = await fetch(`${API_BASE_URL}/users/coaches/${id}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(payload),
-        });
+    async uploadCoachPicture(id: string, file: File): Promise<string> {
+        const formData = new FormData();
+        formData.append("file", file);
 
-        if (!response.ok) {
-            throw new Error(`Failed to update coach: ${response.status}`);
-        }
+        const response = await axiosInstance.post<string>(
+            `/users/coaches/${id}/pic`,
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
 
-        return response.json();
+        return response.data;
+    },
+
+    async getCoachClasses(coachId: string): Promise<CoachClass[]> {
+        const response = await axiosInstance.get<CoachClassesResponse>(
+            `/users/classes/coach/${coachId}?page=0&size=10`
+        );
+        return response.data.content;
+    },
+
+    async createCoachClass(payload: CreateCoachClassPayload): Promise<CoachClass> {
+        const response = await axiosInstance.post<CoachClass>("/users/classes", payload);
+        return response.data;
+    },
+
+    async deleteCoachClass(classId: string) {
+        const response = await axiosInstance.delete(`/users/classes/${classId}`);
+        return response.data;
     },
 };

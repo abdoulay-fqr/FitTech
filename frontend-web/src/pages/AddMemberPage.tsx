@@ -3,7 +3,7 @@ import { ArrowLeft, Bell, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/adminComponents/Sidebar";
 import cover from "../assets/gym-cover.jpg";
-import fallbackAvatar from "../assets/avatar1.png";
+import fallbackAvatar from "../assets/noprofil.png";
 import { memberService } from "../services/memberService";
 
 type Props = {

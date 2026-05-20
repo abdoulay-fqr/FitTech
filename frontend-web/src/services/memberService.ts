@@ -19,8 +19,21 @@ export type CreateMemberAuthPayload = {
 
 export const memberService = {
     async getAllMembers(): Promise<Member[]> {
-        const response = await axiosInstance.get<MembersResponse>("/users/members");
-        return response.data.content;
+        let page = 0;
+        let hasMore = true;
+        const allMembers: Member[] = [];
+
+        while (hasMore) {
+            const response = await axiosInstance.get<MembersResponse>(
+                `/users/members?page=${page}&size=10`
+            );
+
+            allMembers.push(...response.data.content);
+            hasMore = response.data.hasMore;
+            page += 1;
+        }
+
+        return allMembers;
     },
 
     async getMemberById(id: string): Promise<Member> {
@@ -29,7 +42,7 @@ export const memberService = {
     },
 
     async createMember(payload: CreateMemberAuthPayload): Promise<any> {
-        const response = await axiosInstance.post("/auth/member", payload);
+        const response = await axiosInstance.post("/users/members", payload);
         return response.data;
     },
 

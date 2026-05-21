@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.function.RequestPredicates;
 import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
 @Configuration
@@ -24,6 +25,15 @@ public class GatewayConfig {
                 .route(RequestPredicates.path("/auth/**"),
                         HandlerFunctions.http())
                 .before(BeforeFilterFunctions.uri("http://localhost:8081"))
+                .before(request -> {
+                    String authHeader = request.headers().firstHeader("Authorization");
+                    if (authHeader != null) {
+                        return ServerRequest.from(request)
+                                .headers(headers -> headers.set("Authorization", authHeader))
+                                .build();
+                    }
+                    return request;
+                })
                 .filter(jwtAuthFilter)
                 .build();
     }
@@ -35,6 +45,15 @@ public class GatewayConfig {
                 .route(RequestPredicates.path("/users/**"),
                         HandlerFunctions.http())
                 .before(BeforeFilterFunctions.uri("http://localhost:8082"))
+                .before(request -> {
+                    String authHeader = request.headers().firstHeader("Authorization");
+                    if (authHeader != null) {
+                        return ServerRequest.from(request)
+                                .headers(headers -> headers.set("Authorization", authHeader))
+                                .build();
+                    }
+                    return request;
+                })
                 .filter(jwtAuthFilter)
                 .build();
     }

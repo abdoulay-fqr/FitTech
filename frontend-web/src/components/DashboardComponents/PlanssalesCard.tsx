@@ -55,6 +55,14 @@ export default function PlansSalesCard({ period, plans }: PlansSalesCardProps) {
     setTooltipPos({ x: tipX, y: tipY });
   };
 
+  if (!plans || plans.length === 0) {
+    return (
+      <div className="p-4 sm:p-5 lg:p-6 border-b border-gray-200 flex items-center justify-center h-48">
+        <p className="text-sm text-gray-400">Loading...</p>
+      </div>
+    );
+  }
+
   const activePlan = plans[activeIndex];
 
   // Position CSS du tooltip :

@@ -1,14 +1,13 @@
 // ─────────────────────────────────────────────
-// COMPOSANT – LastPaymentsCard
-// Quadrant 3 : liste des derniers paiements
+// COMPOSANT – LastPaymentsCard (UPDATED)
 // ─────────────────────────────────────────────
 import Avatar from "./Avatar";
 
 interface Payment {
-  id: number;
+  id: string;
   name: string;
   amount: number;
-  avatar: string;
+  avatar: string; // URL de l'image ou Initiales
 }
 
 interface LastPaymentsCardProps {
@@ -17,35 +16,49 @@ interface LastPaymentsCardProps {
 
 export default function LastPaymentsCard({ payments }: LastPaymentsCardProps) {
   return (
-    <div className="p-4 sm:p-5 lg:p-6 border-b sm:border-b-0 border-gray-200 sm:border-r">
+    <div className="p-4 sm:p-5 lg:p-6 h-full flex flex-col">
+      
+      {/* Header fixe */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-800">Last payments</h2>
+        <p className="text-xs text-gray-400 mt-1 mb-4 leading-relaxed">
+          You find here the last payments made by the members
+        </p>
+      </div>
 
-      {/* Titre + description */}
-      <h2 className="text-sm font-semibold text-gray-800">Last payments</h2>
-      <p className="text-xs text-gray-400 mt-1 mb-4 leading-relaxed">
-        You find here the last payments made by the members
-      </p>
+      {/* Zone de liste Scrollable */}
+      {/* h-[350px] : Hauteur fixe pour forcer le scroll
+          custom-scrollbar : Pour le style que nous avons ajouté en CSS
+      */}
+      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar" style={{ minHeight: '300px', maxHeight: '400px' }}>
+        <div className="divide-y divide-gray-100">
+          {payments?.length > 0 ? (
+            payments.map((payment) => (
+              <div
+                key={payment.id}
+                className="flex items-center justify-between gap-3 py-3 hover:bg-gray-50/50 transition-colors"
+              >
+                {/* Avatar + nom */}
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* On passe l'avatar. Si c'est une URL, le composant Avatar doit la gérer */}
+                  <Avatar initials={payment.name.substring(0, 2).toUpperCase()} />
+                  <span className="text-xs sm:text-sm font-medium text-gray-800 truncate">
+                    {payment.name}
+                  </span>
+                </div>
 
-      {/* Liste */}
-      <div className="divide-y divide-gray-100">
-        {payments.map((payment) => (
-          <div
-            key={payment.id}
-            className="flex items-center justify-between gap-3 py-2.5"
-          >
-            {/* Avatar + nom */}
-            <div className="flex items-center gap-2 min-w-0">
-              <Avatar initials={payment.avatar} />
-              <span className="text-xs sm:text-sm font-medium text-gray-800 truncate">
-                {payment.name}
-              </span>
+                {/* Montant formaté en DA */}
+                <span className="text-xs sm:text-sm text-blue-600 font-bold shrink-0">
+                  {payment.amount.toLocaleString("fr-DZ")} DA
+                </span>
+              </div>
+            ))
+          ) : (
+            <div className="py-10 text-center text-xs text-gray-400">
+              No recent payments found.
             </div>
-
-            {/* Montant */}
-            <span className="text-xs sm:text-sm text-gray-600 font-medium shrink-0">
-              DA {payment.amount.toLocaleString("fr-DZ")}
-            </span>
-          </div>
-        ))}
+          )}
+        </div>
       </div>
     </div>
   );

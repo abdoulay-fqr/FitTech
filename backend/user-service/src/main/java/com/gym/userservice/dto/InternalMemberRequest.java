@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class InternalMemberRequest {
     private String authId;
-    private String fullName;
+    private String firstName;
+    private String secondName;
     private String gender;
 }

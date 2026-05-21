@@ -1,178 +1,188 @@
-// ─────────────────────────────────────────────
-// PAGE – Dashboard
-// Importe et assemble tous les composants
-// ─────────────────────────────────────────────
-import { useState } from "react";
-import { Bell, Menu, X } from "lucide-react";
+import { useState, useEffect , useRef } from "react";
+import { Bell, Menu, X, Loader2 } from "lucide-react";
 
-import RevenueCard from "../components/DashboardComponents/RevenueCard";
-import PlansSalesCard from "../components/DashboardComponents/PlanssalesCard";
+import RevenueCard      from "../components/DashboardComponents/RevenueCard";
+import PlansSalesCard   from "../components/DashboardComponents/PlanssalesCard";
 import LastPaymentsCard from "../components/DashboardComponents/LastpaymentsCard";
-import MembershipsCard from "../components/DashboardComponents/MembershipsCard";
+import MembershipsCard  from "../components/DashboardComponents/MembershipsCard";
+import NotifButton      from "../components/NotifButton";
+import NotificationDropdown from "../components/NotificationDropdown";
 
-// ─────────────────────────────────────────────
-// TYPES – à connecter au backend
-// ─────────────────────────────────────────────
+
+import {
+  getTotalMembers,
+  getMembershipStats,
+  getLastPayments,
+  getPlanSales,
+  getRevenue,
+} from "../api/dashboardService";
+
+// --- TYPES ---
 interface DashboardData {
   adminName: string;
   revenue: {
     total: number;
     percentChange: number;
     period: string;
-    chartData: { day: string; current: number; previous: number }[];
+    chartData: any[];
   };
   planSales: {
     period: string;
-    plans: { name: string; value: number; color: string; orders: number }[];
+    plans: any[];
   };
-  lastPayments: { id: number; name: string; amount: number; avatar: string }[];
+  lastPayments: any[];
   memberships: {
     total: number;
     percentChange: number;
     period: string;
-    chartData: { month: string; men: number; women: number }[];
+    chartData: any[];
   };
 }
 
-// ─────────────────────────────────────────────
-// MOCK DATA – remplacer par des appels API
-// ─────────────────────────────────────────────
-const mockData: DashboardData = {
-  adminName: "Mr Amine",
-  revenue: {
-    total: 37000,
-    percentChange: 2.1,
-    period: "01-07 Dec, 2025",
-    chartData: [
-      { day: "01", current: 3200, previous: 2800 },
-      { day: "02", current: 4100, previous: 3200 },
-      { day: "03", current: 3800, previous: 3500 },
-      { day: "04", current: 2900, previous: 3100 },
-      { day: "05", current: 5200, previous: 4100 },
-      { day: "06", current: 6100, previous: 4800 },
-      { day: "07", current: 4200, previous: 3900 },
-    ],
-  },
-  planSales: {
-    period: "01-07 Dec, 2025",
-    plans: [
-  { name: "Pro plan",      value: 40, color: "#2d3a6e", orders: 23 },
-  { name: "Beginner plan", value: 32, color: "#7b8fd4", orders: 18 },
-  { name: "Customer plan", value: 28, color: "#c5cef0", orders: 15 },
-],
-  },
-  lastPayments: [
-    { id: 1, name: "MADI Yasmine",    amount: 7000,  avatar: "MY" },
-    { id: 2, name: "SAHNOUN Ahmed",   amount: 6500,  avatar: "SA" },
-    { id: 3, name: "HOUARI Messaoud", amount: 23000, avatar: "HM" },
-    { id: 4, name: "ZOUAOUI Sara",    amount: 8000,  avatar: "ZS" },
-  ],
-  memberships: {
-    total: 2568,
-    percentChange: -2.1,
-    period: "Jul-Dec, 2025",
-    chartData: [
-      { month: "07", men: 1100, women: 900  },
-      { month: "08", men: 1200, women: 950  },
-      { month: "09", men: 1150, women: 1050 },
-      { month: "10", men: 1300, women: 1100 },
-      { month: "11", men: 1250, women: 1200 },
-      { month: "12", men: 1600, women: 1000 },
-    ],
-  },
+const defaultData: DashboardData = {
+  adminName: "",
+  revenue: { total: 0, percentChange: 0, period: "", chartData: [] },
+  planSales: { period: "", plans: [] },
+  lastPayments: [],
+  memberships: { total: 0, percentChange: 0, period: "", chartData: [] },
 };
 
-// ─────────────────────────────────────────────
-// PAGE PRINCIPALE
-// ─────────────────────────────────────────────
 export default function Dashboard() {
-  // TODO: remplacer mockData par un appel API
-  const data: DashboardData = mockData;
+  const [data, setData] = useState<DashboardData>(defaultData);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const adminName = localStorage.getItem("adminName") ?? "Admin";
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [totalMembers, membershipChart, lastPayments, planSales, revenue] = 
+          await Promise.all([
+            getTotalMembers(),
+            getMembershipStats(),
+            getLastPayments(),
+            getPlanSales(),
+            getRevenue(),
+          ]);
+
+        setData({
+          adminName,
+          revenue: revenue || defaultData.revenue,
+          planSales: planSales || defaultData.planSales,
+          lastPayments: lastPayments || [],
+          memberships: {
+            total: totalMembers || 0,
+            percentChange: 0,
+            period: "2026",
+            chartData: membershipChart || [],
+          },
+        });
+      } catch (err: any) {
+        console.error("Dashboard error:", err);
+        setError("Erreur de connexion au backend (Vérifiez les ports 8080/8082)");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDashboard();
+  }, [adminName]);
+
+  // Fermer le menu si on clique ailleurs
+  useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    // On vérifie si containerRef existe ET si le clic (event.target) 
+    // n'est PAS à l'intérieur de cet élément
+    if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      setIsOpen(false);
+    }
+  };
+
+  // On écoute le clic sur TOUT le document
+  document.addEventListener('mousedown', handleClickOutside);
+  
+  // Nettoyage pour éviter les fuites de mémoire
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, []); // [] signifie que l'écouteur est installé une seule fois au chargement
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans">
-
-      {/* Overlay sombre derrière la sidebar (mobile/tablette) */}
+    <div className="flex min-h-screen bg-gray-50 font-sans"  >
+      {/* Sidebar Overlay */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/40 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* ── SIDEBAR ──────────────────────────────────────── */}
-      <aside className={`
-        fixed top-0 left-0 h-full z-30 w-64 bg-white border-r border-gray-200
-        transition-transform duration-300
-        lg:relative lg:translate-x-0 lg:z-auto
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-      `}>
-        <button
-          className="lg:hidden absolute top-4 right-4 text-gray-400 hover:text-gray-700"
-          onClick={() => setSidebarOpen(false)}
-        >
-          <X size={20} />
-        </button>
-
-        {/* TODO: remplacer par <Sidebar /> importé depuis le repo */}
-        <div className="p-6 pt-12 lg:pt-6">
-          <p className="text-base font-bold text-[#2d3a6e]">FitTech</p>
-          <p className="text-xs text-gray-400 mt-1">← Sidebar du repo ici</p>
+      {/* --- SIDEBAR --- */}
+      <aside className={`fixed top-0 left-0 h-full z-30 w-64 bg-white border-r border-gray-200 transition-transform lg:relative lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-6">
+          <p className="text-xl font-bold text-[#2d3a6e]">FitTech</p>
         </div>
       </aside>
 
-      {/* ── CONTENU PRINCIPAL ────────────────────────────── */}
-      <main className="flex-1 min-w-0 overflow-auto p-4 sm:p-6 lg:p-8">
-
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              className="lg:hidden shrink-0 text-gray-600 hover:text-gray-900"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={22} />
-            </button>
-            <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">
-              Welcome back {data.adminName} 👋
-            </h1>
+      {/* --- MAIN CONTENT --- */}
+      <main className="flex-1 min-w-0 p-4 sm:p-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <button className="lg:hidden" onClick={() => setSidebarOpen(true)}><Menu /></button>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome back {adminName} 👋</h1>
           </div>
-          <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors shrink-0">
-            <Bell size={18} />
-            <span className="hidden sm:inline text-sm font-medium">Notifications</span>
-          </button>
+          
+           <div className="relative" ref={containerRef} >
+                  <NotifButton onClick={() => setIsOpen(!isOpen)} isOpen={isOpen} />
+    
+                 {isOpen && (
+                      <div className="absolute right-0 mt-2 z-50 animate-in fade-in zoom-in duration-200">
+                        <NotificationDropdown />
+                      </div>
+                  )}
+  </div>
         </div>
 
-        {/* ── GRILLE 2×2 ───────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
 
-          <RevenueCard
-            total={data.revenue.total}
-            percentChange={data.revenue.percentChange}
-            period={data.revenue.period}
-            chartData={data.revenue.chartData}
-          />
+        {error && <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100">⚠️ {error}</div>}
 
-          <PlansSalesCard
-            period={data.planSales.period}
-            plans={data.planSales.plans}
-          />
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+             <Loader2 className="animate-spin mb-2" />
+             <p>Syncing with backend...</p>
+          </div>
+        ) : (
+          /* GRILLE 2x2 */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm">
+            
+            <div className="border-r border-b border-gray-100 p-6">
+               <RevenueCard {...data.revenue} />
+            </div>
 
-          <LastPaymentsCard
-            payments={data.lastPayments}
-          />
+            {/* SECTION AVEC SCROLLBAR */}
+            <div className="border-b border-gray-100 p-6">
+               <h3 className="font-bold mb-4">Plan Sales</h3>
+               <div className="overflow-y-auto pr-2 custom-scrollbar" style={{ height: "350px" }}>
+                  <PlansSalesCard {...data.planSales} />
+               </div>
+            </div>
 
-          <MembershipsCard
-            total={data.memberships.total}
-            percentChange={data.memberships.percentChange}
-            period={data.memberships.period}
-            chartData={data.memberships.chartData}
-          />
+            {/* SECTION AVEC SCROLLBAR */}
+            <div className="border-r border-gray-100 p-6">
+               <h3 className="font-bold mb-4">Recent Payments</h3>
+               <div className="overflow-y-auto pr-2 custom-scrollbar" style={{ height: "350px" }}>
+                  <LastPaymentsCard payments={data.lastPayments} />
+               </div>
+            </div>
 
-        </div>
+            <div className="p-6">
+               <MembershipsCard {...data.memberships} />
+            </div>
+
+          </div>
+        )}
       </main>
     </div>
   );
 }
-

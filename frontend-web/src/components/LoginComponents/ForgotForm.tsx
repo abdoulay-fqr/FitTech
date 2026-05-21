@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Button from "../Button";
-import { forgotPassword } from "../../api/auth.service"; 
+import { forgotPassword } from "../../api/auth.service";
 
 interface Props {
   onConfirm: (email: string) => void;
@@ -12,20 +12,30 @@ export default function ForgotForm({ onConfirm, onBack }: Props) {
   const [emailError, setEmailError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!email) {
-      setEmailError("Email is required.");
-      return;
-    }
+  // ──► Step 1: Check empty
+  if (!email) {
+    setEmailError("Email is required.");
+    return;
+  }
 
-    try {
-      await forgotPassword(email);
-      onConfirm(email); // ✅ passe à EmailSentCard
-    } catch (error: any) {
-      setEmailError("Email is incorrect.");
-    }
-  };
+  // ──► Step 2: Validate email format
+  const emailRegex = /^[\w.-]+@[\w.-]+\.\w{2,}$/;
+  if (!emailRegex.test(email)) {
+    setEmailError("Please enter a valid email address.");
+    return;
+  }
+
+  // ──► Step 3: Send reset email
+  try {
+    await forgotPassword(email);
+  } catch {
+    // silent — we don't reveal if email exists
+  } finally {
+    onConfirm(email);
+  }
+};
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-12 flex flex-col gap-6 relative z-10">

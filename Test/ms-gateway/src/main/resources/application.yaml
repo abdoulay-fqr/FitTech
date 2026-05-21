@@ -1,0 +1,34 @@
+server:
+  port: 7777
+
+eureka:
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8888/eureka
+
+spring:
+  application:
+    name: ms-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: route-universite
+              uri: lb://Ms-Universite
+              predicates:
+                - Path=/cloud/universite/**
+              filters:
+                - StripPrefix=2
+
+            - id: route-formation
+              uri: lb://Ms-Formation
+              predicates:
+                - Path=/cloud/formation/**
+              filters:
+                - StripPrefix=2
+
+
+

@@ -1,0 +1,20 @@
+type Formation {
+    id: ID
+    intitule: String
+    niveau: String
+    modules: [Module]
+}
+
+type Module {
+    id: ID
+    titre: String
+    enseignant: Enseignant
+}
+
+type Enseignant {
+    nom: String
+}
+
+type Query {
+    formationsByFaculte(facId: ID): [Formation]
+}

@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class InternalAdminRequest {
     private String authId;
-    private String fullName;
+    private String firstName;
+    private String secondName;
     private String phone;
+    private String birthDate;
+    private String gender;
 }

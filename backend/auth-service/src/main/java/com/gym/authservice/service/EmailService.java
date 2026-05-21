@@ -13,10 +13,14 @@ public class EmailService {
     private final JavaMailSender mailSender;
 
     @Value("${app.reset-password-url}")
-    private String resetPasswordUrl;
+    private String resetPasswordUrlWeb;
 
-    public void sendResetPasswordEmail(String toEmail, String token) {
-        String resetLink = resetPasswordUrl + "?token=" + token;
+    @Value("${app.reset-password-url-mobile}")
+    private String resetPasswordUrlMobile;
+
+    public void sendResetPasswordEmail(String toEmail, String token, String platform) {
+        String baseUrl = "mobile".equals(platform) ? resetPasswordUrlMobile : resetPasswordUrlWeb;
+        String resetLink = baseUrl + "?token=" + token;
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("noreply@fittech.com");

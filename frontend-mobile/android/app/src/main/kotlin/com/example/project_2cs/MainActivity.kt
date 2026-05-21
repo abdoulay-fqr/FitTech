@@ -1,4 +1,4 @@
-package com.fittech.fittech_mobile
+package com.example.project_2cs
 
 import io.flutter.embedding.android.FlutterActivity
 

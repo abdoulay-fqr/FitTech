@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:app_links/app_links.dart';
 
+import 'splash_screen.dart';
 import 'onboarding_screen.dart';
 import 'carousel_screen.dart';
 import 'signin_screen.dart';
@@ -15,6 +16,9 @@ import 'password_reset_success_screen.dart';
 import 'free_trial_screen.dart';
 import 'trial_success_screen.dart';
 import 'home_screen.dart';
+import 'profile_screen.dart';
+import 'edit_profile_screen.dart';
+import 'transitions.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,26 +65,18 @@ class _MyAppState extends State<MyApp> {
   void _initDeepLinks() async {
     _appLinks = AppLinks();
 
-    // Handle initial link (app was closed and opened via link)
     try {
       final initialLink = await _appLinks.getInitialLink();
-      if (initialLink != null) {
-        _handleDeepLink(initialLink);
-      }
+      if (initialLink != null) _handleDeepLink(initialLink);
     } catch (e) {
       debugPrint('❌ Error getting initial link: $e');
     }
 
-    // Handle links while app is running
     _linkSubscription = _appLinks.uriLinkStream.listen(
           (Uri? uri) {
-        if (uri != null) {
-          _handleDeepLink(uri);
-        }
+        if (uri != null) _handleDeepLink(uri);
       },
-      onError: (err) {
-        debugPrint('❌ Error listening to link stream: $err');
-      },
+      onError: (err) => debugPrint('❌ Error listening to link stream: $err'),
     );
   }
 
@@ -88,47 +84,23 @@ class _MyAppState extends State<MyApp> {
   // 🎯 PARSE AND NAVIGATE
   // ══════════════════════════════════════════════════════════════════
   void _handleDeepLink(Uri uri) {
-    final link = uri.toString();
-    debugPrint('🔗 Deep link received (original): $link');
-    debugPrint('🔍 Scheme: ${uri.scheme}');
-    debugPrint('🔍 Host: ${uri.host}');
-    debugPrint('🔍 Path: ${uri.path}');
-    debugPrint('🔍 Query: ${uri.query}');
-    debugPrint('🔍 Query Parameters: ${uri.queryParameters}');
+    debugPrint('🔗 Deep link received: $uri');
 
-    // fittech://reset-password?token=xxx
     if (uri.scheme == 'fittech') {
-      // Get token from query parameters
       String? token = uri.queryParameters['token'];
 
-      debugPrint('🔍 Token from queryParameters: $token');
-
-      // If token is null, try parsing the query string manually
       if (token == null && uri.query.isNotEmpty) {
-        final queryParts = uri.query.split('=');
-        if (queryParts.length == 2 && queryParts[0] == 'token') {
-          token = queryParts[1];
-          debugPrint('🔍 Token from manual parse: $token');
-        }
+        final parts = uri.query.split('=');
+        if (parts.length == 2 && parts[0] == 'token') token = parts[1];
       }
 
-      // Check if it's a reset-password link
       if (uri.host == 'reset-password' || uri.path.contains('reset-password')) {
         if (token != null && token.isNotEmpty) {
-          debugPrint('✅ Navigating to reset password with token: $token');
-
-          // Navigate after a small delay to ensure router is ready
           Future.delayed(const Duration(milliseconds: 200), () {
             _router.go('/reset-password?token=$token');
           });
-        } else {
-          debugPrint('⚠️ No token found in reset password link');
         }
-      } else {
-        debugPrint('⚠️ Not a reset-password link. Host: ${uri.host}, Path: ${uri.path}');
       }
-    } else {
-      debugPrint('⚠️ Not a fittech:// scheme. Got: ${uri.scheme}');
     }
   }
 
@@ -137,15 +109,26 @@ class _MyAppState extends State<MyApp> {
   // ══════════════════════════════════════════════════════════════════
   GoRouter _createRouter() {
     return GoRouter(
-      initialLocation: widget.seenOnboarding ? '/signin' : '/onboarding',
+      // Always start with splash
+      initialLocation: '/splash',
       routes: [
-        // ── Home ──────────────────────────────────────────────────────
+
+        // ── Splash ─────────────────────────────────────────────────────
+        // We pass the next screen as a widget directly so the splash can
+        // do a visual cross-fade/slide transition without a Navigator push.
+        // After the transition the splash calls context.go() to hand off
+        // routing control to GoRouter.
         GoRoute(
-          path: '/home',
-          builder: (context, state) => const HomeScreen(),
+          path: '/splash',
+          builder: (context, state) => FitTechSplashScreen(
+            // The widget rendered "underneath" during the cross-fade
+            nextScreen: widget.seenOnboarding
+                ? const SignInScreen()
+                : const OnboardingScreen(),
+          ),
         ),
 
-        // ── Onboarding & Carousel ──────────────────────────────────────
+        // ── Onboarding & Carousel ───────────────────────────────────────
         GoRoute(
           path: '/onboarding',
           builder: (context, state) => const OnboardingScreen(),
@@ -155,7 +138,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const CarouselScreen(),
         ),
 
-        // ── Auth ───────────────────────────────────────────────────────
+        // ── Auth ────────────────────────────────────────────────────────
         GoRoute(
           path: '/signin',
           builder: (context, state) => const SignInScreen(),
@@ -165,7 +148,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const SignUpScreen(),
         ),
 
-        // ── Forgot Password flow ───────────────────────────────────────
+        // ── Forgot Password ─────────────────────────────────────────────
         GoRoute(
           path: '/forgot-password',
           builder: (context, state) => const ForgotPasswordScreen(),
@@ -178,7 +161,7 @@ class _MyAppState extends State<MyApp> {
           },
         ),
         GoRoute(
-          path: '/reset-password', // ← deep link ready 🔗
+          path: '/reset-password',
           builder: (context, state) {
             final token = state.uri.queryParameters['token'] ?? '';
             return ResetPasswordScreen(token: token);
@@ -189,7 +172,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const PasswordResetSuccessScreen(),
         ),
 
-        // ── Free Trial flow ────────────────────────────────────────────
+        // ── Free Trial ──────────────────────────────────────────────────
         GoRoute(
           path: '/free-trial',
           builder: (context, state) => const FreeTrialScreen(),
@@ -197,8 +180,41 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/free-trial/success',
           builder: (context, state) => TrialSuccessScreen(
-  trialId: state.extra as String? ?? 'N/A',
-),
+            trialId: state.extra as String? ?? 'N/A',
+          ),
+        ),
+
+        // ── Home — fade transition ──────────────────────────────────────
+        GoRoute(
+          path: '/home',
+          pageBuilder: (context, state) => FadeTransitionPage(
+            key: state.pageKey,
+            child: const HomeScreen(),
+          ),
+        ),
+
+        // ── Profile — fade transition ───────────────────────────────────
+        GoRoute(
+          path: '/profile',
+          pageBuilder: (context, state) => FadeTransitionPage(
+            key: state.pageKey,
+            child: const ProfileScreen(),
+          ),
+        ),
+
+        // ── Edit Profile — slide up ─────────────────────────────────────
+        GoRoute(
+          path: '/edit-profile',
+          pageBuilder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            return SlideUpTransitionPage(
+              key: state.pageKey,
+              child: EditProfileScreen(
+                member: extra?['member'],
+                memberId: extra?['memberId'],
+              ),
+            );
+          },
         ),
       ],
     );
@@ -210,7 +226,6 @@ class _MyAppState extends State<MyApp> {
       title: 'Fit-Tech',
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
-      builder: (context, child) => child!,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFFCC00)),
         useMaterial3: true,

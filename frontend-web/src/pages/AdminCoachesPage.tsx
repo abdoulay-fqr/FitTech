@@ -1,9 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/adminComponents/Sidebar";
-import MembersPage from "./MembersPage";
+import CoachesPage from "./CoachesPage";
 
-export default function AdminHomePage() {
+export default function AdminCoachesPage() {
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -13,11 +13,10 @@ export default function AdminHomePage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f5f5f5]">
+        <div className="min-h-screen bg-white">
             <Sidebar onLogout={handleLogout} />
-
-            <main className="min-h-screen pt-14 md:ml-[156px] md:pt-0">
-                <MembersPage />
+            <main className="pt-14 md:ml-[156px] md:pt-0">
+                <CoachesPage />
             </main>
         </div>
     );

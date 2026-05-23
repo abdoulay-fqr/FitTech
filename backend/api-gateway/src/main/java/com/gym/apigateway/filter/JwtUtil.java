@@ -40,4 +40,12 @@ public class JwtUtil {
     public String extractRole(String token) {
         return extractAllClaims(token).get("role", String.class);
     }
+
+    public String extractId(String token) {
+        return extractAllClaims(token).get("id", String.class);
+    }
+
+    public String extractEmail(String token) {
+        return extractAllClaims(token).getSubject();
+    }
 }

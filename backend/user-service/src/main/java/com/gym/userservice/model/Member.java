@@ -18,8 +18,14 @@ public class Member {
     @Column(nullable = false)
     private String authId;
 
+    @Column(unique = true)
+    private String email;
+
     @Column(nullable = true)
-    private String fullName;
+    private String firstName;
+
+    @Column(nullable = true)
+    private String secondName;
 
     private String phone;
 
@@ -37,6 +43,16 @@ public class Member {
 
     @Column(nullable = false)
     private boolean suspended = false;
+
     @Column
-    private String gender; // "MALE" or "FEMALE"
+    private String gender;
+
+    @Column
+    private String profilePic;
+
+    @Column
+    private String subscriptionPlan;
+
+    @Column
+    private String subscriptionStatus;
 }

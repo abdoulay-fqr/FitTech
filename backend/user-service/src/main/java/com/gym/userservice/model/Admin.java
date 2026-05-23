@@ -19,7 +19,23 @@ public class Admin {
     private String authId;
 
     @Column(nullable = false)
-    private String fullName;
+    private String firstName;
+
+    @Column(nullable = false)
+    private String secondName;
+
+    @Column(unique = true)
+    private String email;
 
     private String phone;
+
+    private String birthDate;
+
+    private String gender;
+
+    @Column
+    private String profilePic;
+
+    @Column(nullable = false)
+    private boolean superAdmin = false;
 }

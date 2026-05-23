@@ -1,6 +1,5 @@
 package com.gym.authservice.config;
 
-
 import com.gym.authservice.model.Role;
 import com.gym.authservice.model.UserCredential;
 import com.gym.authservice.repository.UserCredentialRepository;
@@ -20,20 +19,42 @@ public class DataInitializer {
     private final PasswordEncoder passwordEncoder;
 
     @Bean
-    public CommandLineRunner initAdmin() {
+    public CommandLineRunner initData() {
         return args -> {
-            if (!repository.existsByEmail("admin@gym.com")) {
-                UserCredential admin = UserCredential.builder()
-                        .email("admin@gym.com")
-                        .password(passwordEncoder.encode("admin123"))
-                        .role(Role.ADMIN)
-                        .suspended(false)
-                        .build();
-                repository.save(admin);
-                log.info("✅ Admin account created: admin@gym.com / admin123");
-            } else {
-                log.info("✅ Admin account already exists");
-            }
+
+            // ─── Super Admin ─────────────────────────────────────────
+            createIfNotExists("superadmin@gym.com", "admin123", Role.SUPER_ADMIN);
+
+            // ─── Admins ──────────────────────────────────────────────
+            createIfNotExists("admin1@gym.com", "admin123", Role.ADMIN);
+            createIfNotExists("admin2@gym.com", "admin123", Role.ADMIN);
+
+            // ─── Coaches ─────────────────────────────────────────────
+            createIfNotExists("coach1@gym.com", "coach123", Role.COACH);
+            createIfNotExists("coach2@gym.com", "coach123", Role.COACH);
+            createIfNotExists("coach3@gym.com", "coach123", Role.COACH);
+
+            // ─── Members ─────────────────────────────────────────────
+            createIfNotExists("member1@gym.com", "member123", Role.MEMBRE);
+            createIfNotExists("member2@gym.com", "member123", Role.MEMBRE);
+            createIfNotExists("member3@gym.com", "member123", Role.MEMBRE);
+            createIfNotExists("member4@gym.com", "member123", Role.MEMBRE);
+            createIfNotExists("member5@gym.com", "member123", Role.MEMBRE);
+
+            log.info("✅ All credentials initialized successfully");
         };
+    }
+
+    private void createIfNotExists(String email, String password, Role role) {
+        if (!repository.existsByEmail(email)) {
+            UserCredential user = UserCredential.builder()
+                    .email(email)
+                    .password(passwordEncoder.encode(password))
+                    .role(role)
+                    .suspended(false)
+                    .build();
+            repository.save(user);
+            log.info("✅ Created: {} / {}", email, password);
+        }
     }
 }

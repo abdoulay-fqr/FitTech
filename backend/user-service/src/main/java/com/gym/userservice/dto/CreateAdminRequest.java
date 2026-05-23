@@ -1,16 +1,26 @@
 package com.gym.userservice.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class CreateAdminRequest {
 
-    @NotBlank(message = "Auth ID is required")
-    private String authId;
+    @NotBlank(message = "First name is required")
+    private String firstName;
 
-    @NotBlank(message = "Full name is required")
-    private String fullName;
+    @NotBlank(message = "Second name is required")
+    private String secondName;
+
+    @Email(message = "Invalid email")
+    @NotBlank(message = "Email is required")
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    private String password;
 
     private String phone;
+    private String birthDate;
+    private String gender;
 }
